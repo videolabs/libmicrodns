@@ -24,11 +24,11 @@
 #include "mdns.h"
 #include "rr.h"
 
-static const char *rr_read_SRV(const char *, size_t *, const char *, union rr_data *);
-static const char *rr_read_PTR(const char *, size_t *, const char *, union rr_data *);
-static const char *rr_read_TXT(const char *, size_t *, const char *, union rr_data *);
-static const char *rr_read_AAAA(const char *, size_t *, const char *, union rr_data *);
-static const char *rr_read_A(const char *, size_t *, const char *, union rr_data *);
+static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+static const uint8_t *rr_read_PTR(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
 
 static const struct {
         enum       rr_type type;
@@ -47,17 +47,16 @@ static const size_t rr_num = sizeof(rrs) / sizeof(*rrs);
 
 #define advance(x) ptr += x; *n -= x
 
-static const char *
-rr_read_SRV(const char *ptr, size_t *n, const char *root, union rr_data *data)
+static const uint8_t *
+rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
 {
-        if (*n <= 6)
+        if (*n <= sizeof(uint16_t) * 3)
                 return (NULL);
 
         ptr = read_u16(ptr, n, &data->SRV.priority);
         ptr = read_u16(ptr, n, &data->SRV.weight);
         ptr = read_u16(ptr, n, &data->SRV.port);
-        ptr = rr_decode(ptr, n, root, &data->SRV.target);
-        if (!ptr)
+        if ((ptr = rr_decode(ptr, n, root, &data->SRV.target)) == NULL)
                 return (NULL);
 
         debug("[priority=%" PRIu16 ", weight=%" PRIu16 ", port=%" PRIu16 ", target=%s]\n",
@@ -65,33 +64,32 @@ rr_read_SRV(const char *ptr, size_t *n, const char *root, union rr_data *data)
         return (ptr);
 }
 
-static const char *
-rr_read_PTR(const char *ptr, size_t *n, const char *root, union rr_data *data)
+static const uint8_t *
+rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
 {
         if (*n == 0)
                 return (NULL);
 
-        ptr = rr_decode(ptr, n, root, &data->PTR.domain);
-        if (!ptr)
+        if ((ptr = rr_decode(ptr, n, root, &data->PTR.domain)) == NULL)
                 return (NULL);
 
         debug("[domain=%s]\n", data->PTR.domain);
         return (ptr);
 }
 
-static const char *
-rr_read_TXT(const char *ptr, size_t *n, const char *root, union rr_data *data)
+static const uint8_t *
+rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
 {
         uint8_t len;
 
         if (*n == 0)
                 return (NULL);
+
         memcpy(&len, ptr, sizeof(len));
         advance(1);
         if (*n < len)
                 return (NULL);
-
-        strncpy(data->TXT.txt, ptr, len);
+        memcpy(data->TXT.txt, ptr, len);
         data->TXT.txt[len] = '\0';
         advance(len);
 
@@ -99,8 +97,8 @@ rr_read_TXT(const char *ptr, size_t *n, const char *root, union rr_data *data)
         return (ptr);
 }
 
-static const char *
-rr_read_AAAA(const char *ptr, size_t *n, const char *root, union rr_data *data)
+static const uint8_t *
+rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
 {
         char addr[INET6_ADDRSTRLEN];
         const size_t len = sizeof(struct in6_addr);
@@ -117,8 +115,8 @@ rr_read_AAAA(const char *ptr, size_t *n, const char *root, union rr_data *data)
         return (ptr);
 }
 
-static const char *
-rr_read_A(const char *ptr, size_t *n, const char *root, union rr_data *data)
+static const uint8_t *
+rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
 {
         char addr[INET_ADDRSTRLEN];
         const size_t len = sizeof(struct in_addr);
@@ -137,10 +135,10 @@ rr_read_A(const char *ptr, size_t *n, const char *root, union rr_data *data)
 
 /*
  * Decodes a DN compressed format (RFC 1035)
- * e.g "0x3foo0x3bar" gives "foo.bar"
+ * e.g "\x03foo\x03bar\x00" gives "foo.bar"
  */
-const char *
-rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
+const uint8_t *
+rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 {
         char *s;
 
@@ -149,35 +147,38 @@ rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
                 return (NULL);
 
         while (*ptr) {
-                size_t free_space = *ss + DN_MAXSZ - s;
-                uint16_t len = (uint8_t) *ptr;
+                size_t free_space;
+                const uint8_t *p;
+                uint16_t len;
+                char *buf;
+                size_t m;
+
+                free_space = *ss + DN_MAXSZ - s;
+                len = *ptr;
                 advance(1);
 
                 /* resolve the offset of the pointer (RFC 1035-4.1.4) */
                 if ((len & 0xC0) == 0xC0) {
-                        if (*n < 2)
+                        if (*n < sizeof(len))
                                 goto err;
-                        len = ((len & ~0xC0) << 8) | *ptr;
+                        len &= ~0xC0;
+                        len = (len << 8) | *ptr;
                         advance(1);
-                        {
-                                char *buf;
-                                const char *p = root + len;
-                                size_t m = ptr - p + *n;
 
-                                rr_decode(p, &m, root, &buf);
-                                if (free_space <= strlen(buf)) {
-                                        free(buf);
-                                        goto err;
-                                }
-                                (void) strcpy(s, buf);
+                        p = root + len;
+                        m = ptr - p + *n;
+                        rr_decode(p, &m, root, &buf);
+                        if (free_space <= strlen(buf)) {
                                 free(buf);
+                                goto err;
                         }
+                        (void) strcpy(s, buf);
+                        free(buf);
                         return (ptr);
                 }
-
                 if (*n <= len || free_space <= len)
                         goto err;
-                strncpy(s, ptr, len);
+                strncpy(s, (const char *) ptr, len);
                 advance(len);
                 s += len;
                 *s++ = (*ptr) ? '.' : '\0';
@@ -191,31 +192,32 @@ err:
 
 /*
  * Encode a DN into its compressed format (RFC 1035)
- * e.g "foo.bar" gives "0x3foo0x3bar"
+ * e.g "foo.bar" gives "\x03foo\x03bar\x00"
  */
-char *
+uint8_t *
 rr_encode(char *s)
 {
-        char *buf, *l, *p, *b;
+        uint8_t *buf, *b;
+        char *l, *p;
 
         buf = malloc(strlen(s) + 2);
         if (!buf)
                 return (NULL);
         for (b = buf, p = strtok_r(s, ".", &l); p; p = strtok_r(NULL, ".", &l)) {
                 *b = strlen(p);
-                (void) strcpy(b + 1, p);
+                memcpy(b + 1, p, *b);
                 b += *b + 1;
         }
-        *b = '\0';
+        *b = 0;
         return (buf);
 }
 
-const char *
-rr_read(const char *ptr, size_t *n, const char *root, struct rr_entry *entry)
+const uint8_t *
+rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
         size_t i;
-        const char *p;
         uint16_t tmp;
+        const uint8_t *p;
 
         ptr = rr_decode(ptr, n, root, &entry->name);
         if (!ptr || *n < 10)

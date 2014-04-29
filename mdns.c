@@ -25,8 +25,8 @@
 #include "mdns.h"
 
 static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
-static ssize_t mdns_write(char *, const struct mdns_hdr *, const struct rr_entry *);
-static struct rr_entry *mdns_read(const char *, size_t);
+static ssize_t mdns_write(uint8_t *, const struct mdns_hdr *, const struct rr_entry *);
+static struct rr_entry *mdns_read(const uint8_t *, size_t);
 
 static struct {
         sock_t sock;
@@ -56,9 +56,9 @@ mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
 int
 mdns_init(const char *addr, unsigned short port)
 {
-        const int on_off = 1;
-        const char loop = 1;
-        const int ttl = 255;
+        const uint32_t on_off = 1;
+        const uint32_t ttl = 255;
+        const uint8_t loop = 1;
 
         ctx.sock = INVALID_SOCKET;
         errno = net_init("2.2");
@@ -95,9 +95,9 @@ mdns_cleanup(void)
 }
 
 static ssize_t
-mdns_write(char *ptr, const struct mdns_hdr *hdr, const struct rr_entry *entry)
+mdns_write(uint8_t *ptr, const struct mdns_hdr *hdr, const struct rr_entry *entry)
 {
-        char *name, *p = ptr;
+        uint8_t *name, *p = ptr;
 
         p = write_u16(p, hdr->id);
         p = write_u16(p, hdr->flags);
@@ -105,16 +105,13 @@ mdns_write(char *ptr, const struct mdns_hdr *hdr, const struct rr_entry *entry)
         p = write_u16(p, hdr->num_ans_rr);
         p = write_u16(p, hdr->num_auth_rr);
         p = write_u16(p, hdr->num_add_rr);
-
-        name = rr_encode(entry->name);
-        if (!name)
+        if ((name = rr_encode(entry->name)) == NULL)
                 return (STD_ERR);
-        (void) strcpy(p, name);
-        p += strlen(name) + 1;
-        free(name);
+        p = write_raw(p, name);
         p = write_u16(p, entry->type);
         p = write_u16(p, (entry->class & ~0x8000) | (entry->msbit << 15));
 
+        free(name);
         return (p - ptr);
 }
 
@@ -123,24 +120,28 @@ mdns_send(enum rr_type type, const char *name)
 {
         struct mdns_hdr hdr;
         struct rr_entry entry;
+        uint8_t buf[PKT_MAXSZ];
         ssize_t n, r;
-        char buf[128];
+
+        if (strlen(name) >= DN_MAXSZ) {
+                errno = EINVAL;
+                return (STD_ERR);
+        }
 
         memset(&hdr, 0, sizeof(hdr));
         hdr.num_qn = 1;
-        entry.name = strdup(name);
-        if (!entry.name)
-                return (STD_ERR);
         entry.type = type;
         entry.class = RR_IN;
         entry.msbit = 0; // ask for multicast responses
+        if((entry.name = strdup(name)) == NULL)
+                return (STD_ERR);
 
         debug("> sending query: type=%s, name=%s\n", rr_str(type), name);
         if ((n = mdns_write(buf, &hdr, &entry)) < 0) {
                 free(entry.name);
                 return (STD_ERR);
         }
-        r = sendto(ctx.sock, buf, n, 0, (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr));
+        r = sendto(ctx.sock, (const char *) buf, n, 0, (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr));
 
         free(entry.name);
         return (r < 0 ? NET_ERR : 0);
@@ -167,11 +168,12 @@ mdns_free(struct rr_entry *entries)
 }
 
 static struct rr_entry *
-mdns_read(const char *ptr, size_t n)
+mdns_read(const uint8_t *ptr, size_t n)
 {
-        const char *root = ptr;
+        const uint8_t *root = ptr;
         struct mdns_hdr hdr;
         struct rr_entry *entry, *entries = NULL;
+        int num_entry;
 
         if (n <= sizeof(hdr)) {
                 errno = ENOSPC;
@@ -182,10 +184,11 @@ mdns_read(const char *ptr, size_t n)
         n -= sizeof(hdr);
 
         if (ntohs(hdr.num_qn) > 0) {
-                errno = ENOTSUP; // support only answers
+                errno = ENOTSUP; // XXX support only answers
                 return (NULL);
         }
-        for (int i = 0; i < ntohs(hdr.num_ans_rr); ++i) {
+        num_entry = ntohs(hdr.num_ans_rr) + ntohs(hdr.num_add_rr);
+        for (int i = 0; i < num_entry; ++i) {
                 entry = calloc(1, sizeof(struct rr_entry));
                 if (!entry)
                         goto err;
@@ -206,11 +209,11 @@ err:
 int
 mdns_recv(struct rr_entry **entries)
 {
-        char buf[PKT_BUF];
+        uint8_t buf[PKT_MAXSZ];
         ssize_t n;
 
 again:
-        if ((n = recv(ctx.sock, buf, sizeof(buf), 0)) < 0)
+        if ((n = recv(ctx.sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (NET_ERR);
 
         *entries = mdns_read(buf, n);

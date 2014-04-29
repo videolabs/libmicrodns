@@ -77,9 +77,9 @@ struct rr_entry {
         struct rr_entry *next;
 };
 
-typedef const char *(*rr_func)(const char *, size_t *, const char *, union rr_data *);
+typedef const uint8_t *(*rr_func)(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
 
-extern const char *rr_decode(const char *, size_t *, const char *, char **);
-extern const char *rr_read(const char *, size_t *, const char *, struct rr_entry *);
+extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char **);
+extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 extern const char *rr_str(enum rr_type);
-extern char *rr_encode(char *);
+extern uint8_t *rr_encode(char *);

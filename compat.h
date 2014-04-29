@@ -78,7 +78,7 @@ typedef int socklen_t;
 # define strtok_r strtok_s
 # define close closesocket
 
-static inline int net_init(const char* version)
+static inline int net_init(const char *version)
 {
         WSADATA data;
         uint16_t low, high;

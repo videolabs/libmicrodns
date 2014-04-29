@@ -20,7 +20,7 @@
 
 #include "rr.h"
 
-#define PKT_BUF 4096 // read buffer size
+#define PKT_MAXSZ 4096 // read/write buffer size
 #define DN_MAXSZ 256 // domain name maximum size
 
 struct mdns_hdr {

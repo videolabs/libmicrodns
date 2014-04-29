@@ -25,7 +25,7 @@ int main(void)
 
         if ((r = mdns_init("224.0.0.251", 5353)) < 0)
                 goto err;
-        if ((r = mdns_send(RR_PTR, "_ssh._tcp.local")) < 0)
+        if ((r = mdns_send(RR_PTR, "_googlecast._tcp.local")) < 0)
                 goto err;
 
         for (;;) {

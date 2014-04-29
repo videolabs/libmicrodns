@@ -36,9 +36,9 @@ enum {
 # include <sys/types.h>
 
 enum {
-        STD_ERR = USE_STRERROR,
-        NET_ERR = USE_STRERROR,
-        GAI_ERR = USE_GAIERROR,
+        STD_ERR = USE_STRERROR, // standard error
+        NET_ERR = USE_STRERROR, // network error
+        LKP_ERR = USE_GAIERROR, // lookup error
 };
 
 typedef int sock_t;
@@ -60,14 +60,15 @@ typedef int sock_t;
 # include <netioapi.h>
 # include <ws2tcpip.h>
 
+/* MinGW lacks AI_NUMERICSERV */
 # ifndef AI_NUMERICSERV
 #  define AI_NUMERICSERV 0x00000008
 # endif
 
 enum {
-        STD_ERR = USE_STRERROR,
-        NET_ERR = USE_FMTMSG,
-        GAI_ERR = USE_FMTMSG,
+        STD_ERR = USE_STRERROR, // standard error
+        NET_ERR = USE_FMTMSG,   // network error
+        LKP_ERR = USE_FMTMSG,   // lookup error
 };
 
 typedef SOCKET sock_t;

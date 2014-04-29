@@ -185,7 +185,7 @@ rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
         advance(1);
         return (ptr);
 err:
-        free(ss);
+        free(*ss);
         return (NULL);
 }
 

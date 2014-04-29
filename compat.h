@@ -98,5 +98,5 @@ extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 
 #endif // !_WIN32
 
-extern int compat_strerror(int, char *, size_t);
+extern int os_strerror(int, char *, size_t);
 extern int mcast_join_group(sock_t, const struct sockaddr_storage *);

@@ -47,7 +47,7 @@ mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
 
         errno = getaddrinfo(addr, buf, &hints, &res);
         if (errno != 0)
-                return (GAI_ERR);
+                return (LKP_ERR);
         memcpy(ss, res->ai_addr, res->ai_addrlen);
         freeaddrinfo(res);
         return (0);
@@ -65,7 +65,7 @@ mdns_init(const char *addr, unsigned short port)
         if (errno != 0)
                 return (NET_ERR);
         if (mdns_resolve(&ctx.addr, addr, port) < 0)
-                return (GAI_ERR);
+                return (LKP_ERR);
 
         if ((ctx.sock = socket(ss_family(&ctx.addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                 return (NET_ERR);
@@ -169,7 +169,6 @@ mdns_free(struct rr_entry *entries)
 static struct rr_entry *
 mdns_read(const char *ptr, size_t n)
 {
-        int num_ans;
         const char *root = ptr;
         struct mdns_hdr hdr;
         struct rr_entry *entry, *entries = NULL;
@@ -182,12 +181,11 @@ mdns_read(const char *ptr, size_t n)
         ptr += sizeof(hdr);
         n -= sizeof(hdr);
 
-        num_ans = ntohs(hdr.num_ans_rr);
-        if (num_ans == 0) {
+        if (ntohs(hdr.num_qn) > 0) {
                 errno = ENOTSUP; // support only answers
                 return (NULL);
         }
-        for (int i = 0; i < num_ans; ++i) {
+        for (int i = 0; i < ntohs(hdr.num_ans_rr); ++i) {
                 entry = calloc(1, sizeof(struct rr_entry));
                 if (!entry)
                         goto err;
@@ -223,5 +221,5 @@ mdns_recv(struct rr_entry **entries)
 int
 mdns_strerror(int r, char *buf, size_t n)
 {
-        return compat_strerror(r, buf, n);
+        return os_strerror(r, buf, n);
 }

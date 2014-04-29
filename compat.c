@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 
@@ -21,34 +22,36 @@
 #include "utils.h"
 
 int
-compat_strerror(int errnum, char *buf, size_t buflen)
+os_strerror(int errnum, char *buf, size_t buflen)
 {
+        int r = 0;
+
         switch (errnum) {
+#if defined (_WIN32)
+                case USE_FMTMSG:
+                        if (errno == 0)
+                                errno = WSAGetLastError();
+                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                            errno, 0, buf, buflen, NULL))
+                                snprintf(buf, buflen, "Error %d\n", errno);
+                        break;
+#endif
                 case USE_STRERROR:
                         if (strerror_r(errno, buf, buflen) != 0)
                                 return (-1);
-                        return (0);
+                        break;
                 case USE_GAIERROR: {
                         const char *s;
 
                         s = gai_strerror(errno);
                         strncpy(buf, s, buflen);
                         buf[buflen - 1] = '\0';
-                        return (0);
+                        break;
                 }
-#if defined (_WIN32)
-                case USE_FMTMSG:
-                        if (errno == 0) // FIXME
-                                errno = WSAGetLastError();
-                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                            errno, 0, buf, buflen, NULL)) {
-                                snprintf(buf, buflen, "Error %d\n", errno);
-                                return (-1);
-                        }
-                        return (0);
-#endif
+                default:
+                        r = -1;
         }
-        return (-1);
+        return (r);
 }
 
 #if defined (_WIN32) && !defined(inet_ntop)
@@ -93,8 +96,8 @@ mcast_join_group(sock_t s, const struct sockaddr_storage *ss)
 #else
         union {
                 struct sockaddr_storage ss;
-                struct sockaddr_in6 sin6;
-                struct sockaddr_in sin;
+                struct sockaddr_in      sin;
+                struct sockaddr_in6     sin6;
         } u;
 
         memcpy(&u, ss, sizeof(*ss));
@@ -120,12 +123,7 @@ mcast_join_group(sock_t s, const struct sockaddr_storage *ss)
                         break;
                 }
                 default:
-# if defined (_WIN32)
-                        WSASetLastError(WSAEAFNOSUPPORT);
-# else
-                        errno = EAFNOSUPPORT;
-# endif
-                        return (-1);
+                        assert(1);
         }
 #endif
         return (0);

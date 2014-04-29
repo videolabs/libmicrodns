@@ -28,7 +28,7 @@ enum {
  * POSIX systems
  */
 
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#if defined (__unix__) || defined (__APPLE__)
 
 # include <sys/socket.h>
 # include <arpa/inet.h>
@@ -47,7 +47,7 @@ typedef int sock_t;
 # define net_init(...) 0
 # define net_cleanup(...) 0
 
-#endif // !__unix__ || (__APPLE__ && __MACH__)
+#endif // !__unix__ || (__APPLE__)
 
 /*
  * Windows glue

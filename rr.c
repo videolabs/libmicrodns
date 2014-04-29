@@ -144,14 +144,13 @@ rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
 {
         char *s;
 
-#define free_space (*ss + DN_MAXSZ - s)
-
         s = *ss = malloc(DN_MAXSZ);
         if (!s)
                 return (NULL);
 
         while (*ptr) {
-                short len = *ptr;
+                size_t free_space = *ss + DN_MAXSZ - s;
+                uint16_t len = (uint8_t) *ptr;
                 advance(1);
 
                 /* resolve the offset of the pointer (RFC 1035-4.1.4) */
@@ -166,7 +165,7 @@ rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
                                 size_t m = ptr - p + *n;
 
                                 rr_decode(p, &m, root, &buf);
-                                if ((size_t) free_space <= strlen(buf)) {
+                                if (free_space <= strlen(buf)) {
                                         free(buf);
                                         goto err;
                                 }
@@ -176,7 +175,7 @@ rr_decode(const char *ptr, size_t *n, const char *root, char **ss)
                         return (ptr);
                 }
 
-                if (*n <= (size_t) len || free_space <= len)
+                if (*n <= len || free_space <= len)
                         goto err;
                 strncpy(s, ptr, len);
                 advance(len);

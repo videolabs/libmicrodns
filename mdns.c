@@ -209,12 +209,16 @@ mdns_recv(struct rr_entry **entries)
         char buf[PKT_BUF];
         ssize_t n;
 
+again:
         if ((n = recv(ctx.sock, buf, sizeof(buf), 0)) < 0)
                 return (NET_ERR);
 
         *entries = mdns_read(buf, n);
-        if (*entries == NULL)
+        if (*entries == NULL) {
+                if (errno == ENOTSUP)
+                        goto again;
                 return (STD_ERR);
+        }
         return (0);
 }
 

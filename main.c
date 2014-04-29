@@ -14,22 +14,32 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <err.h>
+#include <stdio.h>
 
 #include "mdns.h"
 
 int main(void)
 {
-        if (mdns_init("224.0.0.251", 5353) < 0)
-                errx(1, "mdns_init failed");
-        if (mdns_send(RR_PTR, "_ssh._tcp.local") < 0)
-                errx(1, "mdns_send failed");
+        int r;
+        char err[128];
+
+        if ((r = mdns_init("224.0.0.251", 5353)) < 0)
+                goto err;
+        if ((r = mdns_send(RR_PTR, "_ssh._tcp.local")) < 0)
+                goto err;
 
         for (;;) {
                 struct rr_entry *entries;
 
-                entries = mdns_recv();
+                if ((r = mdns_recv(&entries)) < 0) {
+                        mdns_strerror(r, err, sizeof(err));
+                        fprintf(stderr, "warning: %s\n", err);
+                }
                 mdns_free(entries);
         }
+err:
+        mdns_strerror(r, err, sizeof(err));
+        fprintf(stderr, "fatal: %s\n", err);
+        mdns_cleanup();
         return (0);
 }

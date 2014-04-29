@@ -16,7 +16,9 @@
 
 #pragma once
 
-#include <arpa/inet.h>
+#include <stdint.h>
+
+#include "compat.h"
 
 enum rr_type {
         RR_A    = 0x01,
@@ -38,7 +40,7 @@ struct rr_data_srv {
 };
 
 struct rr_data_txt {
-        char *txt;
+        char txt[256]; // RFC 6762
 };
 
 struct rr_data_ptr {
@@ -65,7 +67,7 @@ struct rr_entry {
         char     *name;
         uint16_t type;
         uint16_t class : 15;
-        uint16_t msbit : 1; // unicast query | cache flush
+        uint16_t msbit : 1; // unicast query | cache flush (RFC 6762)
 
         /* Answers only */
         uint32_t ttl;

@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "compat.h"
+#include "utils.h"
 #include "mdns.h"
 #include "rr.h"
 
@@ -89,9 +91,8 @@ rr_read_TXT(const char *ptr, size_t *n, const char *root, union rr_data *data)
         if (*n < len)
                 return (NULL);
 
-        data->TXT.txt = strndup(ptr, len);
-        if (!data->TXT.txt)
-                return (NULL);
+        strncpy(data->TXT.txt, ptr, len);
+        data->TXT.txt[len] = '\0';
         advance(len);
 
         debug("[text=%s]\n", data->TXT.txt);

@@ -58,9 +58,6 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *d
         ptr = read_u16(ptr, n, &data->SRV.port);
         if ((ptr = rr_decode(ptr, n, root, &data->SRV.target)) == NULL)
                 return (NULL);
-
-        debug("[priority=%" PRIu16 ", weight=%" PRIu16 ", port=%" PRIu16 ", target=%s]\n",
-            data->SRV.priority, data->SRV.weight, data->SRV.port, data->SRV.target);
         return (ptr);
 }
 
@@ -72,8 +69,6 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *d
 
         if ((ptr = rr_decode(ptr, n, root, &data->PTR.domain)) == NULL)
                 return (NULL);
-
-        debug("[domain=%s]\n", data->PTR.domain);
         return (ptr);
 }
 
@@ -92,8 +87,6 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *d
         memcpy(data->TXT.txt, ptr, len);
         data->TXT.txt[len] = '\0';
         advance(len);
-
-        debug("[text=%s]\n", data->TXT.txt);
         return (ptr);
 }
 
@@ -110,8 +103,6 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *
         advance(len);
         if (!inet_ntop(AF_INET6, &data->AAAA.addr, addr, sizeof(addr)))
                 return (NULL);
-
-        debug("[address=%s]\n", addr);
         return (ptr);
 }
 
@@ -128,8 +119,6 @@ rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *dat
         advance(len);
         if (!inet_ntop(AF_INET, &data->A.addr, addr, sizeof(addr)))
                 return (NULL);
-
-        debug("[address=%s]\n", addr);
         return (ptr);
 }
 
@@ -215,7 +204,6 @@ rr_encode(char *s)
 const uint8_t *
 rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
-        size_t i;
         uint16_t tmp;
         const uint8_t *p;
 
@@ -231,18 +219,15 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
         ptr = read_u16(ptr, n, &entry->data_len);
 
         p = ptr;
-        for (i = 0; i < rr_num; ++i) {
+        for (size_t i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {
-                        debug("+ got record: type=%s, name=%s\n", rrs[i].name, entry->name);
-
                         ptr = (*rrs[i].reader)(ptr, n, root, &entry->data);
                         if (!ptr)
                                 return (NULL);
                         break;
                 }
         }
-        if (i == rr_num)
-                debug("skipped unknown record\n");
+        // XXX skip unknown records
 
         advance(entry->data_len - (ptr - p));
         return (ptr);

@@ -136,12 +136,12 @@ mdns_send(enum rr_type type, const char *name)
         if((entry.name = strdup(name)) == NULL)
                 return (STD_ERR);
 
-        debug("> sending query: type=%s, name=%s\n", rr_str(type), name);
         if ((n = mdns_write(buf, &hdr, &entry)) < 0) {
                 free(entry.name);
                 return (STD_ERR);
         }
-        r = sendto(ctx.sock, (const char *) buf, n, 0, (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr));
+        r = sendto(ctx.sock, (const char *) buf, n, 0,
+            (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr));
 
         free(entry.name);
         return (r < 0 ? NET_ERR : 0);

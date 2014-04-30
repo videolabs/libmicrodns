@@ -22,12 +22,6 @@
 
 #include "compat.h"
 
-#ifndef NDEBUG
-# define debug(...) do {printf(__VA_ARGS__);} while(0)
-#else
-# define debug(...) do {} while(0)
-#endif
-
 static inline int ss_family(const struct sockaddr_storage *ss)
 {
     return (((const struct sockaddr *) ss)->sa_family);

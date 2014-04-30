@@ -41,6 +41,8 @@ struct rr_data_srv {
 
 struct rr_data_txt {
         char txt[256]; // RFC 6762
+
+        struct rr_data_txt *next;
 };
 
 struct rr_data_ptr {
@@ -59,7 +61,7 @@ struct rr_data_aaaa {
 
 union rr_data {
         struct rr_data_srv  SRV;
-        struct rr_data_txt  TXT;
+        struct rr_data_txt  *TXT;
         struct rr_data_ptr  PTR;
         struct rr_data_a    A;
         struct rr_data_aaaa AAAA;
@@ -79,7 +81,7 @@ struct rr_entry {
         struct rr_entry *next;
 };
 
-typedef const uint8_t *(*rr_rfunc)(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+typedef const uint8_t *(*rr_rfunc)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 typedef void (*rr_pfunc)(union rr_data *);
 
 extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char **);

@@ -24,11 +24,11 @@
 #include "mdns.h"
 #include "rr.h"
 
-static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
-static const uint8_t *rr_read_PTR(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
-static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
-static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
-static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+static const uint8_t *rr_read_PTR(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
 static void rr_print_SRV(union rr_data *);
 static void rr_print_PTR(union rr_data *);
@@ -58,8 +58,10 @@ static const size_t rr_num = sizeof(rrs) / sizeof(*rrs);
 #define advance(x) ptr += x; *n -= x
 
 static const uint8_t *
-rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
+rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
+        union rr_data *data = &entry->data;
+
         if (*n <= sizeof(uint16_t) * 3)
                 return (NULL);
 
@@ -83,8 +85,10 @@ rr_print_SRV(union rr_data *data)
 }
 
 static const uint8_t *
-rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
+rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
+        union rr_data *data = &entry->data;
+
         if (*n == 0)
                 return (NULL);
 
@@ -100,32 +104,51 @@ rr_print_PTR(union rr_data *data)
 }
 
 static const uint8_t *
-rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
+rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
-        uint8_t len;
+        union rr_data *data = &entry->data;
+        uint16_t len = entry->data_len;
+        uint8_t l;
 
-        if (*n == 0)
+        if (*n == 0 || *n < len)
                 return (NULL);
 
-        memcpy(&len, ptr, sizeof(len));
-        advance(1);
-        if (*n < len)
-                return (NULL);
-        memcpy(data->TXT.txt, ptr, len);
-        data->TXT.txt[len] = '\0';
-        advance(len);
+        for (; len > 0; len -= l + 1) {
+                struct rr_data_txt *text;
+
+                memcpy(&l, ptr, sizeof(l));
+                advance(1);
+                if (*n < l)
+                        return (NULL);
+                text = malloc(sizeof(struct rr_data_txt));
+                if (!text)
+                        return (NULL);
+                text->next = data->TXT;
+                data->TXT = text;
+                memcpy(text->txt, ptr, l);
+                text->txt[l] = '\0';
+                advance(l);
+        }
         return (ptr);
 }
 
 static void
 rr_print_TXT(union rr_data *data)
 {
-        printf("{\"text\":\"%s\"}", data->TXT.txt);
+        struct rr_data_txt *text = data->TXT;
+
+        printf("{\"text\":[");
+        while (text) {
+                printf("\"%s\"%s", text->txt, text->next ? "," : "");
+                text = text->next;
+        }
+        printf("]}");
 }
 
 static const uint8_t *
-rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
+rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
+        union rr_data *data = &entry->data;
         const size_t len = sizeof(struct in6_addr);
 
         if (*n < len)
@@ -145,8 +168,9 @@ rr_print_AAAA(union rr_data *data)
 }
 
 static const uint8_t *
-rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, union rr_data *data)
+rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
+        union rr_data *data = &entry->data;
         const size_t len = sizeof(struct in_addr);
 
         if (*n < len)

@@ -161,6 +161,15 @@ mdns_free(struct rr_entry *entries)
                         case RR_PTR:
                                 free(entry->data.PTR.domain);
                                 break;
+                        case RR_TXT: {
+                                struct rr_data_txt *text, *TXT;
+
+                                TXT = entry->data.TXT;
+                                while ((text = TXT)) {
+                                        TXT = TXT->next;
+                                        free(text);
+                                }
+                        }
                 }
                 free(entry->name);
                 free(entry);

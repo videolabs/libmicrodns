@@ -272,6 +272,7 @@ const uint8_t *
 rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry)
 {
         uint16_t tmp;
+        size_t skip;
         const uint8_t *p;
 
         ptr = rr_decode(ptr, n, root, &entry->name);
@@ -288,15 +289,18 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
         p = ptr;
         for (size_t i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {
-                        ptr = (*rrs[i].reader)(ptr, n, root, &entry->data);
+                        ptr = (*rrs[i].reader)(ptr, n, root, entry);
                         if (!ptr)
                                 return (NULL);
                         break;
                 }
         }
         // XXX skip unknown records
+        skip = entry->data_len - (ptr - p);
+        if (*n < skip)
+                return (NULL);
+        advance(skip);
 
-        advance(entry->data_len - (ptr - p));
         return (ptr);
 }
 

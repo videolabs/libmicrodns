@@ -34,6 +34,8 @@ int main(void)
                 if ((r = mdns_recv(&entries)) < 0) {
                         mdns_strerror(r, err, sizeof(err));
                         fprintf(stderr, "warning: %s\n", err);
+                } else {
+                        mdns_print(entries);
                 }
                 mdns_free(entries);
         }

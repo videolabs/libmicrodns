@@ -37,4 +37,5 @@ extern int mdns_cleanup(void);
 extern int mdns_send(enum rr_type, const char *);
 extern void mdns_free(struct rr_entry *);
 extern int mdns_recv(struct rr_entry **);
+extern void mdns_print(struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);

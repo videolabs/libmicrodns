@@ -48,10 +48,12 @@ struct rr_data_ptr {
 };
 
 struct rr_data_a {
+        char   addr_str[INET_ADDRSTRLEN];
         struct in_addr addr;
 };
 
 struct rr_data_aaaa {
+        char   addr_str[INET6_ADDRSTRLEN];
         struct in6_addr addr;
 };
 
@@ -77,9 +79,10 @@ struct rr_entry {
         struct rr_entry *next;
 };
 
-typedef const uint8_t *(*rr_func)(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+typedef const uint8_t *(*rr_rfunc)(const uint8_t *, size_t *, const uint8_t *, union rr_data *);
+typedef void (*rr_pfunc)(union rr_data *);
 
 extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char **);
-extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-extern const char *rr_str(enum rr_type);
 extern uint8_t *rr_encode(char *);
+extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+extern void rr_print(struct rr_entry *);

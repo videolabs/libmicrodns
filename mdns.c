@@ -225,6 +225,19 @@ again:
         return (0);
 }
 
+void
+mdns_print(struct rr_entry *entry)
+{
+        printf("[");
+        while (entry) {
+                rr_print(entry);
+                if (entry->next)
+                        printf(",");
+                entry = entry->next;
+        }
+        printf("]\n");
+}
+
 int
 mdns_strerror(int r, char *buf, size_t n)
 {

@@ -19,6 +19,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include "compat.h"
 #include "utils.h"
@@ -27,11 +28,6 @@
 static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
 static ssize_t mdns_write(uint8_t *, const struct mdns_hdr *, const struct rr_entry *);
 static struct rr_entry *mdns_read(const uint8_t *, size_t);
-
-static struct {
-        sock_t sock;
-        struct sockaddr_storage addr;
-} ctx;
 
 static int
 mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
@@ -54,41 +50,43 @@ mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
 }
 
 int
-mdns_init(const char *addr, unsigned short port)
+mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 {
         const uint32_t on_off = 1;
         const uint32_t ttl = 255;
         const uint8_t loop = 1;
 
-        ctx.sock = INVALID_SOCKET;
+        ctx->sock = INVALID_SOCKET;
         errno = net_init("2.2");
         if (errno != 0)
                 return (NET_ERR);
-        if (mdns_resolve(&ctx.addr, addr, port) < 0)
+        if (mdns_resolve(&ctx->addr, addr, port) < 0)
                 return (LKP_ERR);
 
-        if ((ctx.sock = socket(ss_family(&ctx.addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+        if ((ctx->sock = socket(ss_family(&ctx->addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                 return (NET_ERR);
-        if (setsockopt(ctx.sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
                 return (NET_ERR);
-        if (bind(ctx.sock, (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr)) < 0)
+        if (bind(ctx->sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
                 return (NET_ERR);
 
-        if (mcast_join_group(ctx.sock, &ctx.addr) < 0)
+        if (mcast_join_group(ctx->sock, &ctx->addr) < 0)
                 return (NET_ERR);
-        if (setsockopt(ctx.sock, ss_level(&ctx.addr), IP_MULTICAST_TTL, (const void *) &ttl, sizeof(ttl)) < 0)
+        if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_TTL, (const void *) &ttl, sizeof(ttl)) < 0)
                 return (NET_ERR);
-        if (setsockopt(ctx.sock, ss_level(&ctx.addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
+        if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
                 return (NET_ERR);
 
         return (0);
 }
 
 int
-mdns_cleanup(void)
+mdns_cleanup(struct mdns_ctx *ctx)
 {
-        if (ctx.sock != INVALID_SOCKET)
-                close(ctx.sock);
+        if (ctx->sock != INVALID_SOCKET) {
+                close(ctx->sock);
+                ctx->sock = INVALID_SOCKET;
+        }
         if (net_cleanup() < 0)
                 return (NET_ERR);
         return (0);
@@ -116,7 +114,7 @@ mdns_write(uint8_t *ptr, const struct mdns_hdr *hdr, const struct rr_entry *entr
 }
 
 int
-mdns_send(enum rr_type type, const char *name)
+mdns_send(const struct mdns_ctx *ctx, enum rr_type type, const char *name)
 {
         struct mdns_hdr hdr;
         struct rr_entry entry;
@@ -140,8 +138,8 @@ mdns_send(enum rr_type type, const char *name)
                 free(entry.name);
                 return (STD_ERR);
         }
-        r = sendto(ctx.sock, (const char *) buf, n, 0,
-            (const struct sockaddr *) &ctx.addr, ss_len(&ctx.addr));
+        r = sendto(ctx->sock, (const char *) buf, n, 0,
+            (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr));
 
         free(entry.name);
         return (r < 0 ? NET_ERR : 0);
@@ -216,13 +214,14 @@ err:
 }
 
 int
-mdns_recv(struct rr_entry **entries)
+mdns_recv(const struct mdns_ctx *ctx, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];
         ssize_t n;
 
+        *entries = NULL;
 again:
-        if ((n = recv(ctx.sock, (char *) buf, sizeof(buf), 0)) < 0)
+        if ((n = recv(ctx->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (NET_ERR);
 
         *entries = mdns_read(buf, n);
@@ -251,4 +250,40 @@ int
 mdns_strerror(int r, char *buf, size_t n)
 {
         return os_strerror(r, buf, n);
+}
+
+int
+mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
+    mdns_stop_func stop, mdns_callback callback)
+{
+        int r;
+        time_t t1, t2;
+        struct timeval timeout = {
+                .tv_sec = 0,
+                .tv_usec = 100000,
+        };
+
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &timeout, sizeof(timeout)) < 0)
+                return (NET_ERR);
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &timeout, sizeof(timeout)) < 0)
+                return (NET_ERR);
+
+        if ((r = mdns_send(ctx, RR_PTR, name)) < 0) // send a first probe request
+                callback(r, NULL);
+        for(t1 = t2 = time(NULL); stop() == false; t2 = time(NULL)) {
+                struct rr_entry *entries;
+
+                if (difftime(t2, t1) >= (double) interval) {
+                        if ((r = mdns_send(ctx, RR_PTR, name)) < 0) {
+                                callback(r, NULL);
+                                continue;
+                        }
+                        t1 = t2;
+                }
+                r = mdns_recv(ctx, &entries);
+                if (r == NET_ERR && WOULD_BLOCK())
+                        continue;
+                callback(r, entries);
+        }
+        return (0);
 }

@@ -18,30 +18,39 @@
 
 #include "mdns.h"
 
-int main(void)
+void callback(int status, struct rr_entry *entries)
 {
-        int r;
         char err[128];
 
-        if ((r = mdns_init("224.0.0.251", 5353)) < 0)
-                goto err;
-        if ((r = mdns_send(RR_PTR, "_googlecast._tcp.local")) < 0)
-                goto err;
-
-        for (;;) {
-                struct rr_entry *entries;
-
-                if ((r = mdns_recv(&entries)) < 0) {
-                        mdns_strerror(r, err, sizeof(err));
-                        fprintf(stderr, "warning: %s\n", err);
-                } else {
-                        mdns_print(entries);
-                }
-                mdns_free(entries);
+        if (status < 0) {
+                mdns_strerror(status, err, sizeof(err));
+                fprintf(stderr, "error: %s\n", err);
+                return;
         }
+        mdns_print(entries);
+        mdns_free(entries);
+}
+
+bool stop(void)
+{
+        return (false);
+}
+
+int main(void)
+{
+        int r = 0;
+        char err[128];
+        struct mdns_ctx ctx;
+
+        if ((r = mdns_init(&ctx, "224.0.0.251", 5353)) < 0)
+                goto err;
+        if ((r = mdns_listen(&ctx, "_googlecast._tcp.local", 10, &stop, &callback)) < 0)
+                goto err;
 err:
-        mdns_strerror(r, err, sizeof(err));
-        fprintf(stderr, "fatal: %s\n", err);
-        mdns_cleanup();
+        if (r < 0) {
+                mdns_strerror(r, err, sizeof(err));
+                fprintf(stderr, "fatal: %s\n", err);
+        }
+        mdns_cleanup(&ctx);
         return (0);
 }

@@ -17,11 +17,18 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
+#include "compat.h"
 #include "rr.h"
 
 #define MDNS_PKT_MAXSZ 4096 // read/write buffer size
 #define MDNS_DN_MAXSZ 256 // domain name maximum size
+
+struct mdns_ctx {
+        sock_t sock;
+        struct sockaddr_storage addr;
+};
 
 struct mdns_hdr {
         uint16_t id;
@@ -32,10 +39,15 @@ struct mdns_hdr {
         uint16_t num_add_rr;
 };
 
-extern int mdns_init(const char *, unsigned short);
-extern int mdns_cleanup(void);
-extern int mdns_send(enum rr_type, const char *);
+typedef void (*mdns_callback)(int, struct rr_entry *);
+typedef bool (*mdns_stop_func)(void);
+
+extern int mdns_init(struct mdns_ctx *ctx, const char *, unsigned short);
+extern int mdns_cleanup(struct mdns_ctx *ctx);
+extern int mdns_send(const struct mdns_ctx *ctx, enum rr_type, const char *);
 extern void mdns_free(struct rr_entry *);
-extern int mdns_recv(struct rr_entry **);
+extern int mdns_recv(const struct mdns_ctx *ctx, struct rr_entry **);
 extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
+extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
+    mdns_stop_func stop, mdns_callback callback);

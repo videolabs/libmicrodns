@@ -44,6 +44,7 @@ enum {
 typedef int sock_t;
 # define INVALID_SOCKET -1
 
+# define WOULD_BLOCK() (errno == EWOULDBLOCK)
 # define net_init(...) 0
 # define net_cleanup(...) 0
 
@@ -74,6 +75,7 @@ enum {
 typedef SOCKET sock_t;
 typedef int socklen_t;
 
+# define WOULD_BLOCK() (WSAGetLastError() == WSAEWOULDBLOCK)
 # define strerror_r(x, y, z) strerror_s(y, z, x)
 # define strtok_r strtok_s
 # define close closesocket

@@ -20,8 +20,8 @@
 
 #include "rr.h"
 
-#define PKT_MAXSZ 4096 // read/write buffer size
-#define DN_MAXSZ 256 // domain name maximum size
+#define MDNS_PKT_MAXSZ 4096 // read/write buffer size
+#define MDNS_DN_MAXSZ 256 // domain name maximum size
 
 struct mdns_hdr {
         uint16_t id;
@@ -37,5 +37,5 @@ extern int mdns_cleanup(void);
 extern int mdns_send(enum rr_type, const char *);
 extern void mdns_free(struct rr_entry *);
 extern int mdns_recv(struct rr_entry **);
-extern void mdns_print(struct rr_entry *);
+extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);

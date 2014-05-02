@@ -30,11 +30,11 @@ static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, st
 static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
-static void rr_print_SRV(union rr_data *);
-static void rr_print_PTR(union rr_data *);
-static void rr_print_TXT(union rr_data *);
-static void rr_print_AAAA(union rr_data *);
-static void rr_print_A(union rr_data *);
+static void rr_print_SRV(const union rr_data *);
+static void rr_print_PTR(const union rr_data *);
+static void rr_print_TXT(const union rr_data *);
+static void rr_print_AAAA(const union rr_data *);
+static void rr_print_A(const union rr_data *);
 
 static const char *rr_type_str(enum rr_type);
 static const char *rr_class_str(enum rr_class);
@@ -42,8 +42,8 @@ static const char *rr_class_str(enum rr_class);
 static const struct {
         enum       rr_type type;
         const char *name;
-        rr_rfunc   reader;
-        rr_pfunc   printer;
+        rr_reader  read;
+        rr_printer print;
 
 } rrs[] = {
         {RR_SRV,  "SRV",  &rr_read_SRV, &rr_print_SRV},
@@ -74,7 +74,7 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static void
-rr_print_SRV(union rr_data *data)
+rr_print_SRV(const union rr_data *data)
 {
         printf("{"
             "\"target\":\"%s\","
@@ -98,7 +98,7 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static void
-rr_print_PTR(union rr_data *data)
+rr_print_PTR(const union rr_data *data)
 {
         printf("{\"domain\":\"%s\"}", data->PTR.domain);
 }
@@ -133,7 +133,7 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static void
-rr_print_TXT(union rr_data *data)
+rr_print_TXT(const union rr_data *data)
 {
         struct rr_data_txt *text = data->TXT;
 
@@ -162,7 +162,7 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry
 }
 
 static void
-rr_print_AAAA(union rr_data *data)
+rr_print_AAAA(const union rr_data *data)
 {
         printf("{\"address\":\"%s\"}", data->AAAA.addr_str);
 }
@@ -184,7 +184,7 @@ rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *e
 }
 
 static void
-rr_print_A(union rr_data *data)
+rr_print_A(const union rr_data *data)
 {
         printf("{\"address\":\"%s\"}", data->A.addr_str);
 }
@@ -198,7 +198,7 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 {
         char *s;
 
-        s = *ss = malloc(DN_MAXSZ);
+        s = *ss = malloc(MDNS_DN_MAXSZ);
         if (!s)
                 return (NULL);
 
@@ -209,7 +209,7 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
                 char *buf;
                 size_t m;
 
-                free_space = *ss + DN_MAXSZ - s;
+                free_space = *ss + MDNS_DN_MAXSZ - s;
                 len = *ptr;
                 advance(1);
 
@@ -289,7 +289,7 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
         p = ptr;
         for (size_t i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {
-                        ptr = (*rrs[i].reader)(ptr, n, root, entry);
+                        ptr = (*rrs[i].read)(ptr, n, root, entry);
                         if (!ptr)
                                 return (NULL);
                         break;
@@ -323,7 +323,7 @@ rr_class_str(enum rr_class class)
 }
 
 void
-rr_print(struct rr_entry *entry)
+rr_print(const struct rr_entry *entry)
 {
         size_t i;
 
@@ -336,7 +336,7 @@ rr_print(struct rr_entry *entry)
 
         for (i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {
-                        (*rrs[i].printer)(&entry->data);
+                        (*rrs[i].print)(&entry->data);
                         break;
                 }
         }

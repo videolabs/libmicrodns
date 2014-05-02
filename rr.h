@@ -81,10 +81,10 @@ struct rr_entry {
         struct rr_entry *next;
 };
 
-typedef const uint8_t *(*rr_rfunc)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-typedef void (*rr_pfunc)(union rr_data *);
+typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+typedef void (*rr_printer)(const union rr_data *);
 
 extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char **);
 extern uint8_t *rr_encode(char *);
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-extern void rr_print(struct rr_entry *);
+extern void rr_print(const struct rr_entry *);

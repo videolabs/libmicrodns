@@ -120,10 +120,10 @@ mdns_send(enum rr_type type, const char *name)
 {
         struct mdns_hdr hdr;
         struct rr_entry entry;
-        uint8_t buf[PKT_MAXSZ];
+        uint8_t buf[MDNS_PKT_MAXSZ];
         ssize_t n, r;
 
-        if (strlen(name) >= DN_MAXSZ) {
+        if (strlen(name) >= MDNS_DN_MAXSZ) {
                 errno = EINVAL;
                 return (STD_ERR);
         }
@@ -218,7 +218,7 @@ err:
 int
 mdns_recv(struct rr_entry **entries)
 {
-        uint8_t buf[PKT_MAXSZ];
+        uint8_t buf[MDNS_PKT_MAXSZ];
         ssize_t n;
 
 again:
@@ -235,7 +235,7 @@ again:
 }
 
 void
-mdns_print(struct rr_entry *entry)
+mdns_print(const struct rr_entry *entry)
 {
         printf("[");
         while (entry) {

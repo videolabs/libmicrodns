@@ -28,6 +28,7 @@
 static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
 static ssize_t mdns_write(uint8_t *, const struct mdns_hdr *, const struct rr_entry *);
 static struct rr_entry *mdns_read(const uint8_t *, size_t);
+static int strrcmp(const char *, const char *);
 
 static int
 mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
@@ -252,6 +253,20 @@ mdns_strerror(int r, char *buf, size_t n)
         return os_strerror(r, buf, n);
 }
 
+static int
+strrcmp(const char *s1, const char *s2)
+{
+        size_t m, n;
+
+        if (!s1 || !s2)
+                return (1);
+        m = strlen(s1);
+        n = strlen(s2);
+        if (n > m)
+                return (1);
+        return (strncmp(s1 + m - n, s2, n));
+}
+
 int
 mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
     mdns_stop_func stop, mdns_callback callback)
@@ -270,7 +285,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
 
         if ((r = mdns_send(ctx, RR_PTR, name)) < 0) // send a first probe request
                 callback(r, NULL);
-        for(t1 = t2 = time(NULL); stop() == false; t2 = time(NULL)) {
+        for (t1 = t2 = time(NULL); stop() == false; t2 = time(NULL)) {
                 struct rr_entry *entries;
 
                 if (difftime(t2, t1) >= (double) interval) {
@@ -283,7 +298,13 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
                 r = mdns_recv(ctx, &entries);
                 if (r == NET_ERR && WOULD_BLOCK())
                         continue;
-                callback(r, entries);
+
+                for (struct rr_entry *entry = entries; entry; entry = entry->next) {
+                        if (!strrcmp(entry->name, name)) {
+                                callback(r, entries);
+                                break;
+                        }
+                }
         }
         return (0);
 }

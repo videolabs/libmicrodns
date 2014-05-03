@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "compat.h"
 #include "utils.h"
 #include "mdns.h"
 #include "rr.h"

@@ -21,39 +21,6 @@
 #include "compat.h"
 #include "utils.h"
 
-int
-os_strerror(int errnum, char *buf, size_t buflen)
-{
-        int r = 0;
-
-        switch (errnum) {
-#if defined (_WIN32)
-                case USE_FMTMSG:
-                        if (errno == 0)
-                                errno = WSAGetLastError();
-                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                            errno, 0, buf, buflen, NULL))
-                                snprintf(buf, buflen, "Error %d\n", errno);
-                        break;
-#endif
-                case USE_STRERROR:
-                        if (strerror_r(errno, buf, buflen) != 0)
-                                return (-1);
-                        break;
-                case USE_GAIERROR: {
-                        const char *s;
-
-                        s = gai_strerror(errno);
-                        strncpy(buf, s, buflen);
-                        buf[buflen - 1] = '\0';
-                        break;
-                }
-                default:
-                        r = -1;
-        }
-        return (r);
-}
-
 #if defined (_WIN32) && !defined(inet_ntop)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t size)
@@ -80,10 +47,43 @@ inet_ntop(int af, const void *src, char *dst, socklen_t size)
                 return (NULL);
         return (dst);
 }
-#endif
+#endif // _WIN32 && !inet_ntop
 
 int
-mcast_join_group(sock_t s, const struct sockaddr_storage *ss)
+os_strerror(int errnum, char *buf, size_t buflen)
+{
+        int r = 0;
+
+        switch (errnum) {
+#if defined (_WIN32)
+                case USE_FMTMSG_:
+                        if (errno == 0)
+                                errno = WSAGetLastError();
+                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                            errno, 0, buf, buflen, NULL))
+                                snprintf(buf, buflen, "Error %d\n", errno);
+                        break;
+#endif
+                case USE_STRERROR_:
+                        if (strerror_r(errno, buf, buflen) != 0)
+                                return (-1);
+                        break;
+                case USE_GAIERROR_: {
+                        const char *s;
+
+                        s = gai_strerror(errno);
+                        strncpy(buf, s, buflen);
+                        buf[buflen - 1] = '\0';
+                        break;
+                }
+                default:
+                        r = -1;
+        }
+        return (r);
+}
+
+int
+os_mcast_join(sock_t s, const struct sockaddr_storage *ss)
 {
 #ifdef MCAST_JOIN_GROUP
         struct group_req mgroup;

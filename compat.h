@@ -16,12 +16,10 @@
 
 #pragma once
 
-#include <stdint.h>
-
 enum {
-        USE_STRERROR = -1,
-        USE_GAIERROR = -2,
-        USE_FMTMSG = -3,
+        USE_STRERROR_ = -1,
+        USE_GAIERROR_ = -2,
+        USE_FMTMSG_ = -3,
 };
 
 /*
@@ -30,25 +28,28 @@ enum {
 
 #if defined (__unix__) || defined (__APPLE__)
 
+# include <unistd.h>
 # include <sys/socket.h>
 # include <arpa/inet.h>
 # include <netdb.h>
 # include <sys/types.h>
+# include <errno.h>
 
 enum {
-        STD_ERR = USE_STRERROR, // standard error
-        NET_ERR = USE_STRERROR, // network error
-        LKP_ERR = USE_GAIERROR, // lookup error
+        MDNS_STDERR = USE_STRERROR_, // standard error
+        MDNS_NETERR = USE_STRERROR_, // network error
+        MDNS_LKPERR = USE_GAIERROR_, // lookup error
 };
 
 typedef int sock_t;
 # define INVALID_SOCKET -1
 
-# define WOULD_BLOCK() (errno == EWOULDBLOCK)
-# define net_init(...) 0
-# define net_cleanup(...) 0
+static inline int os_init(const char *version) {return (0);}
+static inline int os_cleanup(void) {return (0);}
+static inline int os_close(sock_t s) {return (close(s));}
+static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 
-#endif // !__unix__ || (__APPLE__)
+#endif // __unix__ || (__APPLE__)
 
 /*
  * Windows glue
@@ -56,6 +57,7 @@ typedef int sock_t;
 
 #if defined (_WIN32)
 
+# include <stdint.h>
 # include <winsock2.h>
 # include <windows.h>
 # include <netioapi.h>
@@ -64,23 +66,18 @@ typedef int sock_t;
 /* MinGW lacks AI_NUMERICSERV */
 # ifndef AI_NUMERICSERV
 #  define AI_NUMERICSERV 0x00000008
-# endif
+# endif // !AI_NUMERICSERV
 
 enum {
-        STD_ERR = USE_STRERROR, // standard error
-        NET_ERR = USE_FMTMSG,   // network error
-        LKP_ERR = USE_FMTMSG,   // lookup error
+        MDNS_STDERR = USE_STRERROR_, // standard error
+        MDNS_NETERR = USE_FMTMSG_,   // network error
+        MDNS_LKPERR = USE_FMTMSG_,   // lookup error
 };
 
 typedef SOCKET sock_t;
 typedef int socklen_t;
 
-# define WOULD_BLOCK() (WSAGetLastError() == WSAEWOULDBLOCK)
-# define strerror_r(x, y, z) strerror_s(y, z, x)
-# define strtok_r strtok_s
-# define close closesocket
-
-static inline int net_init(const char *version)
+static inline int os_init(const char *version)
 {
         WSADATA data;
         uint16_t low, high;
@@ -89,17 +86,18 @@ static inline int net_init(const char *version)
         high = version[2] - '0';
         return (WSAStartup(MAKEWORD(low, high), &data));
 }
+static inline int os_cleanup(void) {return (WSACleanup());}
+static inline int os_close(sock_t s) {return (closesocket(s));}
+static inline int os_wouldblock(void) {return (WSAGetLastError() == WSAEWOULDBLOCK);}
 
-static inline int net_cleanup(void)
-{
-        return (WSACleanup());
-}
+# define strerror_r(x, y, z) strerror_s(y, z, x)
+# define strtok_r strtok_s
 
 # ifndef inet_ntop
 extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
-# endif
+# endif // !inet_ntop
 
-#endif // !_WIN32
+#endif // _WIN32
 
 extern int os_strerror(int, char *, size_t);
-extern int mcast_join_group(sock_t, const struct sockaddr_storage *);
+extern int os_mcast_join(sock_t, const struct sockaddr_storage *);

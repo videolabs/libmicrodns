@@ -15,8 +15,24 @@
  */
 
 #include <stdio.h>
+#include <signal.h>
 
 #include "mdns.h"
+
+volatile sig_atomic_t sigflag = 0;
+
+void sighandler(int signum)
+{
+        char s[] = "SIGINT received, exiting ...\n";
+
+        write(fileno(stdout), s, sizeof(s));
+        sigflag = 1;
+}
+
+bool stop(void)
+{
+        return (sigflag ? true : false);
+}
 
 void callback(int status, struct rr_entry *entries)
 {
@@ -31,16 +47,13 @@ void callback(int status, struct rr_entry *entries)
         mdns_free(entries);
 }
 
-bool stop(void)
-{
-        return (false);
-}
-
 int main(void)
 {
         int r = 0;
         char err[128];
         struct mdns_ctx ctx;
+
+        signal(SIGINT, &sighandler);
 
         if ((r = mdns_init(&ctx, "224.0.0.251", 5353)) < 0)
                 goto err;

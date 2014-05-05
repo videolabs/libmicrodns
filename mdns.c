@@ -271,14 +271,10 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
 {
         int r;
         time_t t1, t2;
-        struct timeval timeout = {
-                .tv_sec = 0,
-                .tv_usec = 100000,
-        };
 
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &timeout, sizeof(timeout)) < 0)
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
                 return (MDNS_NETERR);
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &timeout, sizeof(timeout)) < 0)
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
                 return (MDNS_NETERR);
 
         if ((r = mdns_send(ctx, RR_PTR, name)) < 0) // send a first probe request

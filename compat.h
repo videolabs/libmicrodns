@@ -35,6 +35,8 @@ enum {
 # include <sys/types.h>
 # include <errno.h>
 
+extern struct timeval os_deadline;
+
 enum {
         MDNS_STDERR = USE_STRERROR_, // standard error
         MDNS_NETERR = USE_STRERROR_, // network error
@@ -67,6 +69,8 @@ static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 # ifndef AI_NUMERICSERV
 #  define AI_NUMERICSERV 0x00000008
 # endif // !AI_NUMERICSERV
+
+extern uint32_t os_deadline;
 
 enum {
         MDNS_STDERR = USE_STRERROR_, // standard error

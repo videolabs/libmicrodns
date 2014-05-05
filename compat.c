@@ -21,6 +21,17 @@
 #include "compat.h"
 #include "utils.h"
 
+#if defined (__unix__) || defined (__APPLE__)
+struct timeval os_deadline = {
+        .tv_sec = 0,
+        .tv_usec = 100000,
+};
+#endif // __unix__ || (__APPLE__)
+
+#if defined (_WIN32)
+uint32_t os_deadline = 1000;
+#endif // _WIN32
+
 #if defined (_WIN32) && !defined(inet_ntop)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t size)

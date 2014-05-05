@@ -1,32 +1,42 @@
-TARGET := mdns
+TARGET	:= libmdns
 
-CC 	= $(CROSS_PREFIX)gcc
-RM := rm -f
+CC		:= $(CROSS_COMPILE)gcc
+RM		:= rm -f
 
-PREPROC := _POSIX_C_SOURCE=200809L \
-		  _BSD_SOURCE
+PREPROC := _POSIX_C_SOURCE=200809L _BSD_SOURCE
 
-CFLAGS  := -std=c99 -W -Wall -Wextra -Wformat=2 -Wno-unused-parameter -pipe -O3 -fstrict-aliasing -s
+LDFLAGS	:= -shared -s
+CFLAGS  := -std=c99 -Wall -Wextra -Wformat=2 -Wno-unused-parameter -pipe -O3 -fstrict-aliasing \
+		   -Wcast-align -Wpointer-arith -Wmissing-prototypes -Wwrite-strings -Wlogical-op
 
-ifneq (, $(findstring mingw, $(CROSS_PREFIX)))
-LDFLAGS = -lws2_32
-SUFFIX := .exe
+SRC 	:= mdns.c rr.c compat.c
+OBJ		:= $(SRC:.c=.o)
+
+ifneq (, $(findstring mingw, $(CROSS_COMPILE)))
+
+LDFLAGS	+= $(TARGET).def -lws2_32
+SUFFIX	:= .dll
+BIN 	:= mdns.exe
+
+else
+
+CFLAGS	+= -fPIC
+LDFLAGS += -Wl,-z,relro -Wl,-z,now -Wl,-O1 -Wl,--version-script=$(TARGET).version
+SUFFIX	:= .so
+BIN 	:= mdns
+
 endif
-
-SRC = mdns.c \
-	  rr.c \
-	  main.c \
-	  compat.c \
-
-OBJ = $(SRC:.c=.o)
 
 all : $(TARGET)
 
 $(TARGET) : $(OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET)$(SUFFIX) $(OBJ) $(LDFLAGS)
+	$(CC) -o $(TARGET)$(SUFFIX) $(OBJ) $(LDFLAGS)
 
-.c.o:
+.c.o :
 	$(CC) $(CFLAGS) $(addprefix -D, $(PREPROC)) -c -o $@ $<
 
-clean:
-	$(RM) $(TARGET) $(OBJ)
+test : $(TARGET)
+	$(CC) -o $(BIN) main.c -L. -l$(subst lib,,$(TARGET)) -s
+
+clean :
+	$(RM) $(TARGET)$(SUFFIX) $(OBJ) $(BIN)

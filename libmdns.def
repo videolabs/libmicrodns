@@ -1,0 +1,10 @@
+LIBRARY     LIBMDNS
+EXPORTS
+            mdns_init
+            mdns_cleanup
+            mdns_send
+            mdns_free
+            mdns_recv
+            mdns_print
+            mdns_strerror
+            mdns_listen

@@ -14,7 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#ifndef MICRODNS_RR_H
+#define MICRODNS_RR_H
 
 #include <stdint.h>
 
@@ -88,3 +89,5 @@ extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char
 extern uint8_t *rr_encode(char *);
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 extern void rr_print(const struct rr_entry *);
+
+#endif /* MICRODNS_RR_H */

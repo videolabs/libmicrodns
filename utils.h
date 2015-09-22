@@ -14,7 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#ifndef MICRODNS_UTILS_H
+#define MICRODNS_UTILS_H
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -74,3 +75,5 @@ static inline const uint8_t *read_u32(const uint8_t *p, size_t *s, uint32_t *v)
         *s -= 4;
         return (p);
 }
+
+#endif /* MICRODNS_UTILS_H */

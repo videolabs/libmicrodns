@@ -14,7 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#ifndef MICRODNS_COMPAT_H
+#define MICRODNS_COMPAT_H
 
 enum {
         USE_STRERROR_ = -1,
@@ -105,3 +106,5 @@ extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 
 extern int os_strerror(int, char *, size_t);
 extern int os_mcast_join(sock_t, const struct sockaddr_storage *);
+
+#endif /* MICRODNS_COMPAT_H */

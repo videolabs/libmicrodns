@@ -14,7 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#ifndef MICRODNS_MDNS_H
+#define MICRODNS_MDNS_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -51,3 +52,5 @@ extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
     mdns_stop_func stop, mdns_callback callback);
+
+#endif /* MICRODNS_MDNS_H */

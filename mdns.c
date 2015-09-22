@@ -54,6 +54,13 @@ mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         const uint32_t on_off = 1;
         const uint32_t ttl = 255;
         const uint8_t loop = 1;
+#ifdef _WIN32
+        union {
+                struct sockaddr_storage ss;
+                struct sockaddr_in      sin;
+                struct sockaddr_in6     sin6;
+        } dumb;
+#endif /* _WIN32 */
 
         ctx->sock = INVALID_SOCKET;
         errno = os_init("2.2");
@@ -66,8 +73,24 @@ mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 return (MDNS_NETERR);
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
                 return (MDNS_NETERR);
+#ifdef _WIN32
+        /* bind the receiver on any local address */
+        memset(&dumb, 0, sizeof(dumb));
+        dumb.ss.ss_family = ss_family(&ctx->addr);
+        if (dumb.ss.ss_family == AF_INET) {
+            dumb.sin.sin_port = htons(port);
+            dumb.sin.sin_addr.s_addr = INADDR_ANY;
+        } else {
+            dumb.sin6.sin6_port = htons(port);
+            dumb.sin6.sin6_addr = in6addr_any;
+        }
+
+        if (bind(ctx->sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
+                return (MDNS_NETERR);
+#else /* _WIN32 */
         if (bind(ctx->sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
                 return (MDNS_NETERR);
+#endif /* _WIN32 */
 
         if (os_mcast_join(ctx->sock, &ctx->addr) < 0)
                 return (MDNS_NETERR);

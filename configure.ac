@@ -39,6 +39,8 @@ HAVE_IOS="0"
 HAVE_OSX="0"
 HAVE_TVOS="0"
 
+LIBSOCKET=
+
 case "${host_os}" in
   "")
     SYS=unknown
@@ -187,6 +189,7 @@ case "${host_os}" in
                 PROGRAMFILES="PROGRAMFILES"
             ;;
         esac
+	LIBSOCKET='-lws2_32'
         AC_SUBST(WINDOWS_ARCH)
         AC_SUBST(PROGRAMFILES)
 
@@ -212,6 +215,7 @@ case "${host_os}" in
 esac
 AM_CONDITIONAL(HAVE_WIN32,   test "${SYS}" = "mingw32")
 
+AC_SUBST([LIBSOCKET])
 
 PKG_INSTALLDIR
 

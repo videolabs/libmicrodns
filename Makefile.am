@@ -10,3 +10,6 @@ test_LDADD = libmicrodns.la
 if HAVE_WIN32
 test_LDADD += -lws2_32
 endif
+
+pkginclude_HEADERS = mdns.h rr.h compat.h
+pkgconfig_DATA = microdns.pc

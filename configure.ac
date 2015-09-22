@@ -213,8 +213,11 @@ esac
 AM_CONDITIONAL(HAVE_WIN32,   test "${SYS}" = "mingw32")
 
 
+PKG_INSTALLDIR
+
 AC_CONFIG_FILES([
 Makefile
+microdns.pc
 ])
 
 AC_OUTPUT

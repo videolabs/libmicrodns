@@ -32,7 +32,7 @@ struct timeval os_deadline = {
 uint32_t os_deadline = 1000;
 #endif // _WIN32
 
-#if defined (_WIN32) && !defined(inet_ntop)
+#if defined (_WIN32) && !defined(HAVE_INET_NTOP)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {

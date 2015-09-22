@@ -97,7 +97,7 @@ static inline int os_wouldblock(void) {return (WSAGetLastError() == WSAEWOULDBLO
 # define strerror_r(x, y, z) strerror_s(y, z, x)
 # define strtok_r strtok_s
 
-# ifndef inet_ntop
+#ifndef HAVE_INET_NTOP
 extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 # endif // !inet_ntop
 

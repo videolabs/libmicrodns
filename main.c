@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#include "mdns.h"
+#include "microdns.h"
 
 volatile sig_atomic_t sigflag = 0;
 
@@ -51,19 +51,19 @@ int main(void)
 {
         int r = 0;
         char err[128];
-        struct mdns_ctx ctx;
+        struct mdns_ctx *ctx;
 
         signal(SIGINT, &sighandler);
 
         if ((r = mdns_init(&ctx, "224.0.0.251", 5353)) < 0)
                 goto err;
-        if ((r = mdns_listen(&ctx, "_googlecast._tcp.local", 10, &stop, &callback)) < 0)
+        if ((r = mdns_listen(ctx, "_googlecast._tcp.local", 10, &stop, &callback)) < 0)
                 goto err;
 err:
         if (r < 0) {
                 mdns_strerror(r, err, sizeof(err));
                 fprintf(stderr, "fatal: %s\n", err);
         }
-        mdns_cleanup(&ctx);
+        mdns_cleanup(ctx);
         return (0);
 }

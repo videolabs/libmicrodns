@@ -23,6 +23,8 @@
 
 #include "compat.h"
 
+#define MDNS_DN_MAXSZ 256 // domain name maximum size
+
 static inline int ss_family(const struct sockaddr_storage *ss)
 {
     return (((const struct sockaddr *) ss)->sa_family);

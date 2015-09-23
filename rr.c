@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 #include "utils.h"
-#include "mdns.h"
+#include "microdns.h"
 #include "rr.h"
 
 static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);

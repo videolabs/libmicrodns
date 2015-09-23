@@ -9,5 +9,5 @@ test_SOURCES = main.c
 test_LDADD = libmicrodns.la
 test_LDADD += @LIBSOCKET@
 
-pkginclude_HEADERS = mdns.h rr.h compat.h
+pkginclude_HEADERS = microdns.h rr.h
 pkgconfig_DATA = microdns.pc

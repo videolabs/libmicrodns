@@ -17,33 +17,16 @@
 #ifndef MICRODNS_MDNS_H
 #define MICRODNS_MDNS_H
 
-#include <stdint.h>
 #include <stdbool.h>
 
-#include "compat.h"
 #include "rr.h"
 
-#define MDNS_PKT_MAXSZ 4096 // read/write buffer size
-#define MDNS_DN_MAXSZ 256 // domain name maximum size
-
-struct mdns_ctx {
-        sock_t sock;
-        struct sockaddr_storage addr;
-};
-
-struct mdns_hdr {
-        uint16_t id;
-        uint16_t flags;
-        uint16_t num_qn;
-        uint16_t num_ans_rr;
-        uint16_t num_auth_rr;
-        uint16_t num_add_rr;
-};
+struct mdns_ctx;
 
 typedef void (*mdns_callback)(int, struct rr_entry *);
 typedef bool (*mdns_stop_func)(void);
 
-extern int mdns_init(struct mdns_ctx *ctx, const char *, unsigned short);
+extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_cleanup(struct mdns_ctx *ctx);
 extern int mdns_send(const struct mdns_ctx *ctx, enum rr_type, const char *);
 extern void mdns_free(struct rr_entry *);

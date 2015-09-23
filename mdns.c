@@ -18,10 +18,27 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "compat.h"
 #include "utils.h"
-#include "mdns.h"
+#include "microdns.h"
+
+#define MDNS_PKT_MAXSZ 4096 // read/write buffer size
+
+struct mdns_ctx {
+        sock_t sock;
+        struct sockaddr_storage addr;
+};
+
+struct mdns_hdr {
+        uint16_t id;
+        uint16_t flags;
+        uint16_t num_qn;
+        uint16_t num_ans_rr;
+        uint16_t num_auth_rr;
+        uint16_t num_add_rr;
+};
 
 static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
 static ssize_t mdns_write(uint8_t *, const struct mdns_hdr *, const struct rr_entry *);
@@ -49,7 +66,7 @@ mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
 }
 
 int
-mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
+mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 {
         const uint32_t on_off = 1;
         const uint32_t ttl = 255;
@@ -61,6 +78,15 @@ mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 struct sockaddr_in6     sin6;
         } dumb;
 #endif /* _WIN32 */
+        struct mdns_ctx *ctx;
+
+        if (p_ctx == NULL)
+            return (MDNS_STDERR);
+
+        *p_ctx = malloc(sizeof(struct mdns_ctx));
+        if (*p_ctx == NULL)
+            return (MDNS_STDERR);
+        ctx = *p_ctx;
 
         ctx->sock = INVALID_SOCKET;
         errno = os_init("2.2");
@@ -105,13 +131,16 @@ mdns_init(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 int
 mdns_cleanup(struct mdns_ctx *ctx)
 {
+    if (ctx != NULL) {
         if (ctx->sock != INVALID_SOCKET) {
                 os_close(ctx->sock);
                 ctx->sock = INVALID_SOCKET;
         }
-        if (os_cleanup() < 0)
-                return (MDNS_NETERR);
-        return (0);
+        free(ctx);
+    }
+    if (os_cleanup() < 0)
+            return (MDNS_NETERR);
+    return (0);
 }
 
 static ssize_t

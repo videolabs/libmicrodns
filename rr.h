@@ -19,7 +19,11 @@
 
 #include <stdint.h>
 
-#include "compat.h"
+#if defined (__unix__) || defined (__APPLE__)
+# include <arpa/inet.h>
+#elif defined(_WIN32)
+# include <ws2tcpip.h>
+#endif
 
 enum rr_type {
         RR_A    = 0x01,

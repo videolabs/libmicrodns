@@ -120,7 +120,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
         if (os_mcast_join(ctx->sock, &ctx->addr) < 0)
                 return (MDNS_NETERR);
-        if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_TTL, (const void *) &ttl, sizeof(ttl)) < 0)
+        if (setsockopt(ctx->sock, ss_level(&ctx->addr), ss_family(&ctx->addr)==AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, (const void *) &ttl, sizeof(ttl)) < 0)
                 return (MDNS_NETERR);
         if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
                 return (MDNS_NETERR);

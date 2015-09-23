@@ -279,7 +279,7 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
 
         ptr = read_u16(ptr, n, &entry->type);
         ptr = read_u16(ptr, n, &tmp);
-        entry->class = (tmp & ~0x8000);
+        entry->rr_class = (tmp & ~0x8000);
         entry->msbit = ((tmp & 0x8000) == 0x8000);
         ptr = read_u32(ptr, n, &entry->ttl);
         ptr = read_u16(ptr, n, &entry->data_len);
@@ -313,9 +313,9 @@ rr_type_str(enum rr_type type)
 }
 
 static const char *
-rr_class_str(enum rr_class class)
+rr_class_str(enum rr_class rr_class)
 {
-        if (class == RR_IN)
+        if (rr_class == RR_IN)
                 return ("IN");
         return ("UNKNOWN");
 }
@@ -330,7 +330,7 @@ rr_print(const struct rr_entry *entry)
             "\"type\":\"%s\","
             "\"class\":\"%s\","
             "\"data\":",
-            entry->name, rr_type_str(entry->type), rr_class_str(entry->class));
+            entry->name, rr_type_str(entry->type), rr_class_str(entry->rr_class));
 
         for (i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {

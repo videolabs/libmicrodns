@@ -21,6 +21,10 @@
 
 #include "rr.h"
 
+# ifdef __cplusplus
+extern "C" {
+# endif
+
 struct mdns_ctx;
 
 #define MDNS_PORT        5353
@@ -39,5 +43,9 @@ extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
     mdns_stop_func stop, mdns_callback callback);
+
+# ifdef __cplusplus
+}
+# endif
 
 #endif /* MICRODNS_MDNS_H */

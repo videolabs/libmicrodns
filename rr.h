@@ -25,6 +25,10 @@
 # include <ws2tcpip.h>
 #endif
 
+# ifdef __cplusplus
+extern "C" {
+# endif
+
 enum rr_type {
         RR_A    = 0x01,
         RR_PTR  = 0x0C,
@@ -75,7 +79,7 @@ union rr_data {
 struct rr_entry {
         char     *name;
         uint16_t type;
-        uint16_t class : 15;
+        uint16_t rr_class : 15;
         uint16_t msbit : 1; // unicast query | cache flush (RFC 6762)
 
         /* Answers only */
@@ -93,5 +97,9 @@ extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char
 extern uint8_t *rr_encode(char *);
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 extern void rr_print(const struct rr_entry *);
+
+# ifdef __cplusplus
+}
+# endif
 
 #endif /* MICRODNS_RR_H */

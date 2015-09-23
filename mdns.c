@@ -319,7 +319,7 @@ strrcmp(const char *s1, const char *s2)
 
 int
 mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
-    mdns_stop_func stop, mdns_callback callback)
+    mdns_stop_func stop, mdns_callback callback, void *p_cookie)
 {
         int r;
         time_t t1, t2;
@@ -330,13 +330,13 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
                 return (MDNS_NETERR);
 
         if ((r = mdns_send(ctx, RR_PTR, name)) < 0) // send a first probe request
-                callback(r, NULL);
-        for (t1 = t2 = time(NULL); stop() == false; t2 = time(NULL)) {
+                callback(p_cookie, r, NULL);
+        for (t1 = t2 = time(NULL); stop(p_cookie) == false; t2 = time(NULL)) {
                 struct rr_entry *entries;
 
                 if (difftime(t2, t1) >= (double) interval) {
                         if ((r = mdns_send(ctx, RR_PTR, name)) < 0) {
-                                callback(r, NULL);
+                                callback(p_cookie, r, NULL);
                                 continue;
                         }
                         t1 = t2;
@@ -347,7 +347,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
 
                 for (struct rr_entry *entry = entries; entry; entry = entry->next) {
                         if (!strrcmp(entry->name, name)) {
-                                callback(r, entries);
+                                callback(p_cookie, r, entries);
                                 break;
                         }
                 }

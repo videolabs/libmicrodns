@@ -31,8 +31,11 @@ struct mdns_ctx;
 #define MDNS_ADDR_IPV4   "224.0.0.251"
 #define MDNS_ADDR_IPV6   "FF02::FB"
 
-typedef void (*mdns_callback)(int, struct rr_entry *);
-typedef bool (*mdns_stop_func)(void);
+typedef void (*mdns_callback)(void*, int, struct rr_entry *);
+/**
+ * \return true if the listener should be stopped
+ */
+typedef bool (*mdns_stop_func)(void*);
 
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_cleanup(struct mdns_ctx *ctx);
@@ -42,7 +45,7 @@ extern int mdns_recv(const struct mdns_ctx *ctx, struct rr_entry **);
 extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
-    mdns_stop_func stop, mdns_callback callback);
+    mdns_stop_func stop, mdns_callback callback, void* p_callback_cookie);
 
 # ifdef __cplusplus
 }

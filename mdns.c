@@ -158,7 +158,7 @@ mdns_write(uint8_t *ptr, const struct mdns_hdr *hdr, const struct rr_entry *entr
                 return (MDNS_STDERR);
         p = write_raw(p, name);
         p = write_u16(p, entry->type);
-        p = write_u16(p, (entry->class & ~0x8000) | (entry->msbit << 15));
+        p = write_u16(p, (entry->rr_class & ~0x8000) | (entry->msbit << 15));
 
         free(name);
         return (p - ptr);
@@ -180,7 +180,7 @@ mdns_send(const struct mdns_ctx *ctx, enum rr_type type, const char *name)
         memset(&hdr, 0, sizeof(hdr));
         hdr.num_qn = 1;
         entry.type = type;
-        entry.class = RR_IN;
+        entry.rr_class = RR_IN;
         entry.msbit = 0; // ask for multicast responses
         if((entry.name = strdup(name)) == NULL)
                 return (MDNS_STDERR);

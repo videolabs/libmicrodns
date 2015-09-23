@@ -64,12 +64,15 @@ int
 os_strerror(int errnum, char *buf, size_t buflen)
 {
         int r = 0;
+        if (buflen == 0)
+            return -1;
+
+        buf[0] = '\0';
 
         switch (errnum) {
 #if defined (_WIN32)
                 case USE_FMTMSG_:
-                        if (errno == 0)
-                                errno = WSAGetLastError();
+                        errno = WSAGetLastError();
                         if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
                             errno, 0, buf, buflen, NULL))
                                 snprintf(buf, buflen, "Error %d\n", errno);

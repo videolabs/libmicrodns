@@ -31,7 +31,7 @@ struct mdns_ctx;
 #define MDNS_ADDR_IPV4   "224.0.0.251"
 #define MDNS_ADDR_IPV6   "FF02::FB"
 
-typedef void (*mdns_callback)(void*, int, struct rr_entry *);
+typedef void (*mdns_callback)(void*, int, const struct rr_entry *);
 /**
  * \return true if the listener should be stopped
  */

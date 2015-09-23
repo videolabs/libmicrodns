@@ -44,7 +44,6 @@ void callback(void *p_cookie, int status, struct rr_entry *entries)
                 return;
         }
         mdns_print(entries);
-        mdns_free(entries);
 }
 
 int main(void)

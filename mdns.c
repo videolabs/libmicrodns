@@ -351,6 +351,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
                                 break;
                         }
                 }
+                mdns_free(entries);
         }
         return (0);
 }

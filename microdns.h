@@ -23,6 +23,10 @@
 
 struct mdns_ctx;
 
+#define MDNS_PORT        5353
+#define MDNS_ADDR_IPV4   "224.0.0.251"
+#define MDNS_ADDR_IPV6   "FF02::FB"
+
 typedef void (*mdns_callback)(int, struct rr_entry *);
 typedef bool (*mdns_stop_func)(void);
 

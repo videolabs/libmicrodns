@@ -55,7 +55,7 @@ int main(void)
 
         signal(SIGINT, &sighandler);
 
-        if ((r = mdns_init(&ctx, "224.0.0.251", 5353)) < 0)
+        if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
                 goto err;
         if ((r = mdns_listen(ctx, "_googlecast._tcp.local", 10, &stop, &callback)) < 0)
                 goto err;

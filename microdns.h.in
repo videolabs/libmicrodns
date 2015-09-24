@@ -27,6 +27,12 @@ extern "C" {
 
 struct mdns_ctx;
 
+#define MICRODNS_VERSION_NAME  "@VERSION@"
+#define MICRODNS_VERSION_INT   (@MICRODNS_MAJOR@<<16 | @MICRODNS_MINOR@<<8 | @MICRODNS_MICRO@)
+#define MICRODNS_MAJOR         @MICRODNS_MAJOR@
+#define MICRODNS_MINOR         @MICRODNS_MINOR@
+#define MICRODNS_MICRO         @MICRODNS_MICRO@
+
 #define MDNS_PORT        5353
 #define MDNS_ADDR_IPV4   "224.0.0.251"
 #define MDNS_ADDR_IPV6   "FF02::FB"

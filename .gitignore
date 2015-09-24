@@ -1,5 +1,6 @@
 # Object files
 *.o
+*.lo
 *.ko
 *.obj
 *.elf
@@ -7,6 +8,7 @@
 # Libraries
 *.lib
 *.a
+*.la
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -33,3 +35,13 @@
 /compile
 /config.guess
 /autom4te.cache
+/.libs
+/.deps
+/stamp-h1
+/Makefile
+/config.h
+/config.log
+/config.status
+/libtool
+/microdns.h
+/microdns.pc

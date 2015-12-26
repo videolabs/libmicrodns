@@ -1,7 +1,10 @@
-mdns
-====
+microdns
+========
 
-Minimal MDNS resolver
+Minimal mDNS resolver library
+-----------------------------
 
-This is very early stage, use at your OWN risks
+This is very early stage, use at your OWN risks.
+
+On our way to make it wayyy better :)
 

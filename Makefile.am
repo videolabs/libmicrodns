@@ -11,3 +11,5 @@ test_LDADD += @LIBSOCKET@
 
 pkginclude_HEADERS = microdns.h rr.h
 pkgconfig_DATA = microdns.pc
+
+dist_doc_DATA = README.md

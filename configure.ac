@@ -22,7 +22,6 @@ AC_C_INLINE
 
 AC_HEADER_ASSERT
 
-AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_FUNCS([inet_ntop])
 
 dnl

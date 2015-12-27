@@ -2,7 +2,12 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/src
 
-libmicrodns_la_SOURCES = src/mdns.c src/rr.c compat/compat.c
+libmicrodns_la_SOURCES = \
+	compat/compat.c compat/compat.h \
+	src/mdns.c \
+	src/microdns.h \
+	src/rr.c src/rr.h \
+	src/utils.h
 
 lib_LTLIBRARIES = libmicrodns.la
 libmicrodns_la_LDFLAGS = -export-symbols-regex '^(mdns|rr)_'

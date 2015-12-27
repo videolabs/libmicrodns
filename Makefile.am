@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-CFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/src @CFLAGS@
+AM_CPPFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/src
 
 libmicrodns_la_SOURCES = src/mdns.c src/rr.c compat/compat.c
 

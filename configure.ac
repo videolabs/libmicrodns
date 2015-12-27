@@ -20,20 +20,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CC_C99
 AC_C_INLINE
 
-dnl
-dnl  Debugging mode
-dnl
-AC_ARG_ENABLE(debug,
-  [AS_HELP_STRING([--enable-debug],
-    [build with run-time assertions (default disabled)])],,
-  [enable_debug="no"])
-AH_TEMPLATE(NDEBUG,
-            [Define to 1 if debug code should NOT be compiled])
-AS_IF([test "${enable_debug}" != "no"], [
-  AC_CHECK_HEADERS([valgrind/valgrind.h])
-], [
-  AC_DEFINE(NDEBUG)
-])
+AC_HEADER_ASSERT
 
 AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_FUNCS([inet_ntop])

@@ -1,5 +1,3 @@
-SUBDIRS = .
-
 libmicrodns_la_SOURCES = mdns.c rr.c compat.c
 
 lib_LTLIBRARIES = libmicrodns.la

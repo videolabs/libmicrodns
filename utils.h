@@ -48,6 +48,15 @@ static inline uint8_t *write_u16(uint8_t *p, const uint16_t v)
         return (p);
 }
 
+static inline uint8_t *write_u32(uint8_t *p, const uint16_t v)
+{
+        *p++ = (v >> 24) & 0xFF;
+        *p++ = (v >> 16) & 0xFF;
+        *p++ = (v >>  8) & 0xFF;
+        *p++ = (v >>  0) & 0xFF;
+        return (p);
+}
+
 static inline uint8_t *write_raw(uint8_t *p, const uint8_t *v)
 {
         size_t len;

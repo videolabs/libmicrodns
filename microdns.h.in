@@ -47,7 +47,34 @@ struct mdns_ctx;
 #define MDNS_ADDR_IPV4   "224.0.0.251"
 #define MDNS_ADDR_IPV6   "FF02::FB"
 
+#define GET_RCODE(x)    (x&0x000f)
+#define SET_RCODE(x,c)  (x|(c&0x000f))
+ 
+#define GET_OPCODE(x)   (x&0x7800)
+#define SET_OPCODE(x,c) (x|(c&0x7800))
+ 
+ enum mdns_hdr_flag {
+       FLAG_QR = 1 << 15, // Question/Response
+       FLAG_AA = 1 << 10, // Authoritative Answer
+       FLAG_TC = 1 <<  9, // Truncated Response
+       FLAG_RD = 1 <<  8, // Recursion Desired
+       FLAG_RA = 1 <<  7, // Recursion Available
+       FLAG_Z  = 1 <<  6, // Reserved
+       FLAG_AD = 1 <<  5, // Authentic Data
+       FLAG_CD = 1 <<  4, // Checking Disabled
+};
+
+struct mdns_hdr {
+        uint16_t id;
+        uint16_t flags;
+        uint16_t num_qn;
+        uint16_t num_ans_rr;
+        uint16_t num_auth_rr;
+        uint16_t num_add_rr;
+};
+
 typedef void (*mdns_callback)(void*, int, const struct rr_entry *);
+
 /**
  * \return true if the listener should be stopped
  */
@@ -55,13 +82,13 @@ typedef bool (*mdns_stop_func)(void*);
 
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_cleanup(struct mdns_ctx *ctx);
-extern int mdns_send(const struct mdns_ctx *ctx, enum rr_type, const char *);
+extern int mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
 extern void mdns_free(struct rr_entry *);
-extern int mdns_recv(const struct mdns_ctx *ctx, struct rr_entry **);
+extern int mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **);
 extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
-extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, unsigned int interval,
-    mdns_stop_func stop, mdns_callback callback, void* p_callback_cookie);
+extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,
+        mdns_stop_func stop, mdns_callback callback, void *p_cookie);
 
 # ifdef __cplusplus
 }

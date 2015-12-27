@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <signal.h>
 
 #include "microdns.h"
@@ -36,7 +37,7 @@ bool stop(void *p_cookie)
         return (sigflag ? true : false);
 }
 
-void callback(void *p_cookie, int status, struct rr_entry *entries)
+void callback(void *p_cookie, int status, const struct rr_entry *entries)
 {
         char err[128];
 
@@ -58,7 +59,7 @@ int main(void)
 
         if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
                 goto err;
-        if ((r = mdns_listen(ctx, "_googlecast._tcp.local", 10, &stop, &callback, NULL)) < 0)
+        if ((r = mdns_listen(ctx, "_googlecast._tcp.local", RR_PTR, 10, &stop, &callback, NULL)) < 0)
                 goto err;
 err:
         if (r < 0) {

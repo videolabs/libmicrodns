@@ -11,13 +11,14 @@ libmicrodns_la_SOURCES = \
 
 lib_LTLIBRARIES = libmicrodns.la
 libmicrodns_la_LDFLAGS = -export-symbols-regex '^(mdns|rr)_'
+libmicrodns_la_LIBADD = $(LIBSOCKET)
 
 EXTRA_PROGRAMS = test announce
 
 test_SOURCES = examples/main.c
-test_LDADD = libmicrodns.la $(LIBSOCKET)
+test_LDADD = libmicrodns.la
 announce_SOURCES = examples/announce.c
-announce_LDADD = libmicrodns.la $(LIBSOCKET)
+announce_LDADD = libmicrodns.la
 
 pkginclude_HEADERS = src/microdns.h src/rr.h
 pkgconfig_DATA = src/microdns.pc

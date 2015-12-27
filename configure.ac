@@ -7,7 +7,7 @@ AC_COPYRIGHT([Copyright 2014-2015 VideoLabs])
 AC_INIT([microDNS], [MDNS_MAJOR.MDNS_MINOR.MDNS_MICRO])
 AC_CONFIG_HEADERS([config.h])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 m4_ifdef([AM_SILENT_RULES], [
   AM_SILENT_RULES([yes])
 ])

@@ -224,8 +224,8 @@ PKG_INSTALLDIR
 
 AC_CONFIG_FILES([
 Makefile
-microdns.pc
-microdns.h
+src/microdns.pc
+src/microdns.h
 ])
 
 AC_OUTPUT

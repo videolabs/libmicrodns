@@ -328,16 +328,18 @@ err:
 uint8_t *
 rr_encode(char *s)
 {
-        uint8_t *buf, *b;
-        char *l, *p;
+        uint8_t *buf, *b, l = 0;
+        char *p = s;
 
         buf = malloc(strlen(s) + 2);
         if (!buf)
                 return (NULL);
-        for (b = buf, p = strtok_r(s, ".", &l); p; p = strtok_r(NULL, ".", &l)) {
-                *b = strlen(p);
-                memcpy(b + 1, p, *b);
-                b += *b + 1;
+        for (b = buf, l = strcspn(p, "."); l > 0;
+                l = *p ? strcspn(++p, ".") : 0) {
+                *b = l;
+                memcpy(b + 1, p, l);
+                b += l + 1;
+                p += l;
         }
         *b = 0;
         return (buf);

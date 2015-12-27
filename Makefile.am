@@ -1,18 +1,21 @@
-ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/src
 
-CFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/src @CFLAGS@
-
-libmicrodns_la_SOURCES = src/mdns.c src/rr.c compat/compat.c
+libmicrodns_la_SOURCES = \
+	compat/compat.c compat/compat.h \
+	src/mdns.c \
+	src/microdns.h \
+	src/rr.c src/rr.h \
+	src/utils.h
 
 lib_LTLIBRARIES = libmicrodns.la
+libmicrodns_la_LDFLAGS = -export-symbols-regex '^(mdns|rr)_'
 
-noinst_PROGRAMS = test announce
+EXTRA_PROGRAMS = test announce
+
 test_SOURCES = examples/main.c
-test_LDADD = libmicrodns.la
-test_LDADD += @LIBSOCKET@
+test_LDADD = libmicrodns.la $(LIBSOCKET)
 announce_SOURCES = examples/announce.c
-announce_LDADD = libmicrodns.la
-announce_LDADD += @LIBSOCKET@
+announce_LDADD = libmicrodns.la $(LIBSOCKET)
 
 pkginclude_HEADERS = src/microdns.h src/rr.h
 pkgconfig_DATA = src/microdns.pc

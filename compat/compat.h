@@ -101,6 +101,7 @@ static inline int os_wouldblock(void) {return (WSAGetLastError() == WSAEWOULDBLO
 
 #ifndef HAVE_INET_NTOP
 extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+extern int inet_pton(int af, const char *src, void *dst);
 # endif // !inet_ntop
 
 #endif // _WIN32

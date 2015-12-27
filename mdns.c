@@ -213,24 +213,7 @@ mdns_free(struct rr_entry *entries)
 
         while ((entry = entries)) {
                 entries = entries->next;
-                switch (entry->type) {
-                        case RR_SRV:
-                                free(entry->data.SRV.target);
-                                break;
-                        case RR_PTR:
-                                free(entry->data.PTR.domain);
-                                break;
-                        case RR_TXT: {
-                                struct rr_data_txt *text, *TXT;
-
-                                TXT = entry->data.TXT;
-                                while ((text = TXT)) {
-                                        TXT = TXT->next;
-                                        free(text);
-                                }
-                        }
-                }
-                free(entry->name);
+                rr_free(entry);
                 free(entry);
         }
 }

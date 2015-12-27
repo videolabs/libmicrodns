@@ -473,3 +473,32 @@ rr_print(const struct rr_entry *entry)
 
         printf("}");
 }
+
+void
+rr_free(struct rr_entry *entry)
+{
+        if (!entry) return;
+
+        switch (entry->type) {
+        case RR_SRV:
+                if (entry->data.SRV.target)
+                         free(entry->data.SRV.target);
+        break;
+        case RR_PTR:
+                if (entry->data.PTR.domain)
+                        free(entry->data.PTR.domain);
+        break;
+        case RR_TXT:
+        {
+                struct rr_data_txt *text, *TXT;
+
+                TXT = entry->data.TXT;
+                while ((text = TXT)) {
+                        TXT = TXT->next;
+                        if (text)
+                               free(text);
+                }
+        }}
+        if (entry->name)
+                free(entry->name);
+}

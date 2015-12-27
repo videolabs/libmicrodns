@@ -22,11 +22,15 @@ AC_SUBST(MICRODNS_MICRO)
 
 AC_PROG_LIBTOOL
 AC_PROG_CC_C99
+AM_PROG_CC_C_O
 AC_C_INLINE
 
 AC_HEADER_ASSERT
 
 AC_CHECK_FUNCS([inet_ntop])
+
+dnl check for -Wall -Wextra support
+CC_CHECK_CFLAG_APPEND([-Wall -Wsign-compare -Wextra])
 
 dnl
 dnl  Check the operating system

@@ -260,7 +260,7 @@ mdns_read(const uint8_t *ptr, size_t n)
                 entry = calloc(1, sizeof(struct rr_entry));
                 if (!entry)
                         goto err;
-                ptr = rr_read(ptr, &n, root, entry);
+                ptr = rr_read(ptr, &n, root, entry, 1);
                 if (!ptr) {
                         errno = ENOSPC;
                         goto err;

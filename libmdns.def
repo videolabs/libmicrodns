@@ -8,3 +8,5 @@ EXPORTS
             mdns_print
             mdns_strerror
             mdns_listen
+            mdns_announce
+            mdns_serve

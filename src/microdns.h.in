@@ -49,10 +49,10 @@ struct mdns_ctx;
 
 #define GET_RCODE(x)    (x&0x000f)
 #define SET_RCODE(x,c)  (x|(c&0x000f))
- 
+
 #define GET_OPCODE(x)   (x&0x7800)
 #define SET_OPCODE(x,c) (x|(c&0x7800))
- 
+
  enum mdns_hdr_flag {
        FLAG_QR = 1 << 15, // Question/Response
        FLAG_AA = 1 << 10, // Authoritative Answer

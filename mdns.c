@@ -26,9 +26,18 @@
 
 #define MDNS_PKT_MAXSZ 4096 // read/write buffer size
 
+struct mdns_svc {
+        char *name;
+        enum rr_type type;
+        mdns_callback callback;
+        void *p_cookie;
+        struct mdns_svc *next;
+};
+
 struct mdns_ctx {
         sock_t sock;
         struct sockaddr_storage addr;
+        struct mdns_svc *services;
 };
 
 static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
@@ -115,6 +124,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
         if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
                 return (MDNS_NETERR);
 
+        ctx->services = NULL;
         return (0);
 }
 
@@ -125,6 +135,15 @@ mdns_cleanup(struct mdns_ctx *ctx)
         if (ctx->sock != INVALID_SOCKET) {
                 os_close(ctx->sock);
                 ctx->sock = INVALID_SOCKET;
+        }
+        if (ctx->services) {
+                struct mdns_svc *svc;
+
+        while ((svc = ctx->services)) {
+                ctx->services = ctx->services->next;
+                if (svc->name) free(svc->name);
+                        free(svc);
+                }
         }
         free(ctx);
     }
@@ -318,6 +337,59 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, uns
                         }
                 }
                 mdns_free(entries);
+        }
+        return (0);
+}
+
+int 
+mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
+        mdns_callback callback, void *p_cookie)
+{
+        if (!callback)
+                return (MDNS_STDERR);
+
+        struct mdns_svc *svc = (struct mdns_svc *) calloc(1, sizeof(struct mdns_svc));
+        if (!svc)
+                return (MDNS_STDERR);
+
+        svc->name = strdup(service);
+        svc->type = type;
+        svc->callback = callback;
+        svc->p_cookie = p_cookie;
+        svc->next  = ctx->services;
+
+        ctx->services = svc;
+        return (0);
+}
+
+int
+mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
+{
+        int r;
+        struct mdns_svc *svc;
+        struct mdns_hdr qhdr = {0};
+        struct rr_entry *question;
+
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
+                return (MDNS_NETERR);
+        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
+                return (MDNS_NETERR);
+
+        for (; stop(p_cookie) == false;) {
+                r = mdns_recv(ctx, &qhdr, &question);
+                if (r == MDNS_NETERR)
+                        continue;
+                if (qhdr.num_qn == 0)
+                        goto again;
+
+                for (svc = ctx->services; svc; svc = svc->next) {
+                        if (!strrcmp(question->name, svc->name) && question->type == svc->type) {
+                                svc->callback(svc->p_cookie, r, question);
+                                goto again;
+                        }
+                }
+again:
+                mdns_free(question);
         }
         return (0);
 }

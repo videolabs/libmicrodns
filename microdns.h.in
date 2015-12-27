@@ -79,6 +79,9 @@ extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,
         mdns_stop_func stop, mdns_callback callback, void *p_cookie);
+extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type,
+        mdns_callback callback, void *p_cookie);
+extern int mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie);
 
 # ifdef __cplusplus
 }

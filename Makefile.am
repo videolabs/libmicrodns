@@ -10,7 +10,7 @@ libmicrodns_la_SOURCES = \
 	src/utils.h
 
 lib_LTLIBRARIES = libmicrodns.la
-libmicrodns_la_LDFLAGS = -export-symbols-regex '^(mdns|rr)_'
+libmicrodns_la_LDFLAGS = -no-undefined -export-symbols-regex '^(mdns|rr)_'
 libmicrodns_la_LIBADD = $(LIBSOCKET)
 
 EXTRA_PROGRAMS = test announce

@@ -181,7 +181,7 @@ mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct r
 {
         uint8_t buf[MDNS_PKT_MAXSZ] = {0};
         const struct rr_entry *entry = entries;
-        ssize_t i, n = 0, l, r;
+        ssize_t n = 0, l, r;
 
         if (!entries) return (MDNS_STDERR);
 
@@ -240,7 +240,6 @@ mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **en
         struct rr_entry *entry;
 
         *entries = NULL;
-again:  
         if ((n = recv(ctx->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (MDNS_NETERR);
 
@@ -351,7 +350,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, uns
         return (0);
 }
 
-int 
+int
 mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
         mdns_callback callback, void *p_cookie)
 {

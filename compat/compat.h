@@ -49,7 +49,7 @@ enum {
 typedef int sock_t;
 # define INVALID_SOCKET -1
 
-static inline int os_init(const char *version) {return (0);}
+static inline int os_init(const char *version) { (void)version; return (0);}
 static inline int os_cleanup(void) {return (0);}
 static inline int os_close(sock_t s) {return (close(s));}
 static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}

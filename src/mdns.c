@@ -236,15 +236,15 @@ int
 mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];
-        size_t num_entry;
-        ssize_t n;
+        size_t num_entry, n;
+        ssize_t length;
         struct rr_entry *entry;
 
         *entries = NULL;
-        if ((n = recv(ctx->sock, (char *) buf, sizeof(buf), 0)) < 0)
+        if ((length = recv(ctx->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (MDNS_NETERR);
 
-        const uint8_t *ptr = mdns_read_header(buf, n, hdr);
+        const uint8_t *ptr = mdns_read_header(buf, length, hdr);
 
         num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
         for (size_t i = 0; i < num_entry; ++i) {

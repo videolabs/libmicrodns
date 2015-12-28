@@ -141,25 +141,25 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 int
 mdns_cleanup(struct mdns_ctx *ctx)
 {
-    if (ctx != NULL) {
-        if (ctx->sock != INVALID_SOCKET) {
-                os_close(ctx->sock);
-                ctx->sock = INVALID_SOCKET;
-        }
-        if (ctx->services) {
-                struct mdns_svc *svc;
-
-        while ((svc = ctx->services)) {
-                ctx->services = ctx->services->next;
-                if (svc->name) free(svc->name);
-                        free(svc);
+        if (ctx != NULL) {
+                if (ctx->sock != INVALID_SOCKET) {
+                        os_close(ctx->sock);
+                        ctx->sock = INVALID_SOCKET;
                 }
+                if (ctx->services) {
+                        struct mdns_svc *svc;
+
+                        while ((svc = ctx->services)) {
+                                ctx->services = ctx->services->next;
+                                if (svc->name) free(svc->name);
+                                free(svc);
+                        }
+                }
+                free(ctx);
         }
-        free(ctx);
-    }
-    if (os_cleanup() < 0)
-            return (MDNS_NETERR);
-    return (0);
+        if (os_cleanup() < 0)
+                return (MDNS_NETERR);
+        return (0);
 }
 
 static ssize_t
@@ -191,7 +191,7 @@ mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct r
         n += l;
 
         for (entry = entries; entry; entry = entry->next) {
-        l = rr_write(buf+n, entry, (hdr->flags & FLAG_QR) > 0);
+                l = rr_write(buf+n, entry, (hdr->flags & FLAG_QR) > 0);
                 if (l < 0) {
                         return (MDNS_STDERR);
                 }

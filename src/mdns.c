@@ -236,7 +236,8 @@ int
 mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];
-        ssize_t n, num_entry;
+        size_t num_entry;
+        ssize_t n;
         struct rr_entry *entry;
 
         *entries = NULL;
@@ -246,7 +247,7 @@ mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **en
         const uint8_t *ptr = mdns_read_header(buf, n, hdr);
 
         num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
-        for (int i = 0; i < num_entry; ++i) {
+        for (size_t i = 0; i < num_entry; ++i) {
                 entry = calloc(1, sizeof(struct rr_entry));
                 if (!entry)
                         goto err;

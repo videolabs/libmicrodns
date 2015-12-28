@@ -101,13 +101,13 @@ struct rr_entry {
 };
 
 typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-typedef ssize_t (*rr_writer)(uint8_t *, const struct rr_entry *);
+typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);
 typedef void (*rr_printer)(const union rr_data *);
 
 extern const uint8_t *rr_decode(const uint8_t *, size_t *, const uint8_t *, char **);
 extern uint8_t *rr_encode(char *);
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *, int8_t ans);
-extern ssize_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
+extern size_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
 extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 

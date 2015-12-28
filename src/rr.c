@@ -38,11 +38,11 @@ static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, st
 static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
-static ssize_t rr_write_SRV(uint8_t *, const struct rr_entry *);
-static ssize_t rr_write_PTR(uint8_t *, const struct rr_entry *);
-static ssize_t rr_write_TXT(uint8_t *, const struct rr_entry *);
-static ssize_t rr_write_AAAA(uint8_t *, const struct rr_entry *);
-static ssize_t rr_write_A(uint8_t *, const struct rr_entry *);
+static size_t rr_write_SRV(uint8_t *, const struct rr_entry *);
+static size_t rr_write_PTR(uint8_t *, const struct rr_entry *);
+static size_t rr_write_TXT(uint8_t *, const struct rr_entry *);
+static size_t rr_write_AAAA(uint8_t *, const struct rr_entry *);
+static size_t rr_write_A(uint8_t *, const struct rr_entry *);
 
 static void rr_print_SRV(const union rr_data *);
 static void rr_print_PTR(const union rr_data *);
@@ -88,7 +88,7 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static ssize_t
+static size_t
 rr_write_SRV(uint8_t *ptr, const struct rr_entry *entry)
 {
         uint8_t *target, *p = ptr;
@@ -128,7 +128,7 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static ssize_t
+static size_t
 rr_write_PTR(uint8_t *ptr, const struct rr_entry *entry)
 {
         uint8_t *domain, *p = ptr;
@@ -174,7 +174,7 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static ssize_t
+static size_t
 rr_write_TXT(uint8_t *ptr, const struct rr_entry *entry)
 {
         uint8_t *p = ptr;
@@ -220,7 +220,7 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry
         return (ptr);
 }
 
-static ssize_t
+static size_t
 rr_write_AAAA(uint8_t *ptr, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.AAAA.addr);
@@ -250,7 +250,7 @@ rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *e
         return (ptr);
 }
 
-static ssize_t
+static size_t
 rr_write_A(uint8_t *ptr, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.A.addr);
@@ -365,7 +365,7 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
         return ptr;
 }
 
-static ssize_t
+static size_t
 rr_write_RR(uint8_t *ptr, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *name, *p = ptr;
@@ -411,11 +411,11 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
         return (ptr);
 }
 
-ssize_t
+size_t
 rr_write(uint8_t *ptr, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *p = ptr;
-        ssize_t n = 0;
+        size_t n = 0;
         uint16_t l = 0;
 
         l = rr_write_RR(p, entry, ans);

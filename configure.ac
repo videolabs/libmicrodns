@@ -32,7 +32,7 @@ AC_HEADER_ASSERT
 AC_CHECK_FUNCS([inet_ntop])
 
 dnl check for -Wall -Wextra support
-CC_CHECK_CFLAG_APPEND([-Wall -Wsign-compare -Wextra -Wformat=2 -Wno-unused-parameter -pipe -fstrict-aliasing -Wcast-align -Wpointer-arith -Wmissing-prototypes -Wwrite-strings -Wlogical-op])
+CC_CHECK_CFLAG_APPEND([-Wall -Wsign-compare -Wextra -Wstrict-aliasing -Wstrict-overflow -Wformat=2 -Wno-unused-parameter -pipe -Wcast-align -Wpointer-arith -Wmissing-prototypes -Wwrite-strings -Wlogical-op])
 
 dnl
 dnl  Check the operating system

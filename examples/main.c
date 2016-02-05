@@ -49,17 +49,31 @@ static void callback(void *p_cookie, int status, const struct rr_entry *entries)
         mdns_print(entries);
 }
 
-int main(void)
+int main(int i_argc, char *ppsz_argv[])
 {
         int r = 0;
         char err[128];
         struct mdns_ctx *ctx;
+        const char **ppsz_names;
+        int i_nb_names;
+        static const char *psz_default_name = "_googlecast._tcp.local";
 
+        if (i_argc > 1)
+        {
+                ppsz_names = (const char **) &ppsz_argv[1];
+                i_nb_names = i_argc - 1;
+        }
+        else
+        {
+                ppsz_names = &psz_default_name;
+                i_nb_names = 1;
+        }
         signal(SIGINT, &sighandler);
 
         if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
                 goto err;
-        if ((r = mdns_listen(ctx, "_googlecast._tcp.local", RR_PTR, 10, &stop, &callback, NULL)) < 0)
+        if ((r = mdns_listen_m(ctx, ppsz_names, i_nb_names, RR_PTR, 10, &stop,
+                               &callback, NULL)) < 0)
                 goto err;
 err:
         if (r < 0) {

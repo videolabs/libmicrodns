@@ -302,32 +302,39 @@ strrcmp(const char *s1, const char *s2)
 }
 
 int
-mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,
-    mdns_stop_func stop, mdns_callback callback, void *p_cookie)
+mdns_listen_m(const struct mdns_ctx *ctx, const char *const names[],
+              unsigned int nb_names, enum rr_type type, unsigned int interval,
+              mdns_stop_func stop, mdns_callback callback, void *p_cookie)
 {
         int r;
         time_t t1, t2;
         struct mdns_hdr hdr = {0};
-        struct rr_entry qn = {0};
+        struct rr_entry qns[nb_names];
+        memset(qns, 0, sizeof(qns));
 
-        hdr.num_qn  = 1;
-        qn.name     = (char *)name;
-        qn.type     = type;
-        qn.rr_class = RR_IN;
+        hdr.num_qn = nb_names;
+        for (unsigned int i = 0; i < nb_names; ++i)
+        {
+                qns[i].name     = (char *)names[i];
+                qns[i].type     = type;
+                qns[i].rr_class = RR_IN;
+                if (i + 1 < nb_names)
+                    qns[i].next = &qns[i+1];
+        }
 
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
                 return (MDNS_NETERR);
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
                 return (MDNS_NETERR);
 
-        if ((r = mdns_send(ctx, &hdr, &qn)) < 0) // send a first probe request
+        if ((r = mdns_send(ctx, &hdr, qns)) < 0) // send a first probe request
                 callback(p_cookie, r, NULL);
         for (t1 = t2 = time(NULL); stop(p_cookie) == false; t2 = time(NULL)) {
                 struct mdns_hdr ahdr = {0};
                 struct rr_entry *entries;
 
                 if (difftime(t2, t1) >= (double) interval) {
-                        if ((r = mdns_send(ctx, &hdr, &qn)) < 0) {
+                        if ((r = mdns_send(ctx, &hdr, qns)) < 0) {
                                 callback(p_cookie, r, NULL);
                                 continue;
                         }
@@ -341,14 +348,23 @@ mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, uns
                         continue;
 
                 for (struct rr_entry *entry = entries; entry; entry = entry->next) {
-                        if (!strrcmp(entry->name, name)) {
-                                callback(p_cookie, r, entries);
-                                break;
+                        for (unsigned int i = 0; i < nb_names; ++i) {
+                                if (!strrcmp(entry->name, names[i])) {
+                                        callback(p_cookie, r, entries);
+                                        break;
+                                }
                         }
                 }
                 mdns_free(entries);
         }
         return (0);
+}
+
+int
+mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,
+    mdns_stop_func stop, mdns_callback callback, void *p_cookie)
+{
+        return mdns_listen_m(ctx, &name, 1, type, interval, stop, callback, p_cookie);
 }
 
 int

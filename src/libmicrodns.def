@@ -1,7 +1,7 @@
 LIBRARY     LIBMDNS
 EXPORTS
             mdns_init
-            mdns_cleanup
+            mdns_destroy
             mdns_send
             mdns_print
             mdns_strerror

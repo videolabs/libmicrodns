@@ -78,6 +78,6 @@ err:
                 mdns_strerror(r, err, sizeof(err));
                 fprintf(stderr, "fatal: %s\n", err);
         }
-        mdns_cleanup(ctx);
+        mdns_destroy(ctx);
         return (0);
 }

@@ -144,7 +144,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 }
 
 int
-mdns_cleanup(struct mdns_ctx *ctx)
+mdns_destroy(struct mdns_ctx *ctx)
 {
         if (ctx != NULL) {
                 if (ctx->sock != INVALID_SOCKET) {

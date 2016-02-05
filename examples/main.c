@@ -46,7 +46,7 @@ static void callback(void *p_cookie, int status, const struct rr_entry *entries)
                 fprintf(stderr, "error: %s\n", err);
                 return;
         }
-        mdns_print(entries);
+        mdns_entries_print(entries);
 }
 
 int main(int i_argc, char *ppsz_argv[])

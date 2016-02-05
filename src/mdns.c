@@ -274,7 +274,7 @@ err:
 }
 
 void
-mdns_print(const struct rr_entry *entry)
+mdns_entries_print(const struct rr_entry *entry)
 {
         printf("[");
         while (entry) {

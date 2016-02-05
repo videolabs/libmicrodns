@@ -3,7 +3,7 @@ EXPORTS
             mdns_init
             mdns_destroy
             mdns_send
-            mdns_print
+            mdns_entries_print
             mdns_strerror
             mdns_listen
             mdns_announce

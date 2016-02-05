@@ -83,7 +83,7 @@ typedef bool (*mdns_stop_func)(void*);
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_destroy(struct mdns_ctx *ctx);
 extern int mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
-extern void mdns_print(const struct rr_entry *);
+extern void mdns_entries_print(const struct rr_entry *);
 
 extern int mdns_strerror(int, char *, size_t);
 

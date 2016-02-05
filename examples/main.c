@@ -72,8 +72,8 @@ int main(int i_argc, char *ppsz_argv[])
 
         if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
                 goto err;
-        if ((r = mdns_listen_m(ctx, ppsz_names, i_nb_names, RR_PTR, 10, &stop,
-                               &callback, NULL)) < 0)
+        if ((r = mdns_listen_m(ctx, ppsz_names, i_nb_names, RR_PTR, 10, stop,
+                               callback, NULL)) < 0)
                 goto err;
 err:
         if (r < 0) {

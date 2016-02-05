@@ -182,7 +182,7 @@ mdns_write_hdr(uint8_t *ptr, const struct mdns_hdr *hdr)
 }
 
 int
-mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries)
+mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ] = {0};
         const struct rr_entry *entry = entries;
@@ -332,14 +332,14 @@ mdns_listen_m(const struct mdns_ctx *ctx, const char *const names[],
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
                 return (MDNS_NETERR);
 
-        if ((r = mdns_send(ctx, &hdr, qns)) < 0) // send a first probe request
+        if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) // send a first probe request
                 callback(p_cookie, r, NULL);
         for (t1 = t2 = time(NULL); stop(p_cookie) == false; t2 = time(NULL)) {
                 struct mdns_hdr ahdr = {0};
                 struct rr_entry *entries;
 
                 if (difftime(t2, t1) >= (double) interval) {
-                        if ((r = mdns_send(ctx, &hdr, qns)) < 0) {
+                        if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) {
                                 callback(p_cookie, r, NULL);
                                 continue;
                         }

@@ -53,7 +53,7 @@ void callback(void *cbarg, int r, const struct rr_entry *entry)
 
         sprintf(answer.data.A.addr_str, "192.168.1.1");
         inet_pton(AF_INET, answer.data.A.addr_str, &answer.data.A.addr);
-        mdns_send(ctx, &hdr, &answer);
+        mdns_entries_send(ctx, &hdr, &answer);
 }
 
 int main(int argc, char *argv[])

@@ -54,6 +54,11 @@ static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short)
 static ssize_t mdns_write_hdr(uint8_t *, const struct mdns_hdr *);
 static int strrcmp(const char *, const char *);
 
+extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *, int8_t ans);
+extern size_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
+extern void rr_print(const struct rr_entry *);
+extern void rr_free(struct rr_entry *);
+
 static int
 mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
 {
@@ -204,7 +209,7 @@ mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct r
         return (r < 0 ? MDNS_NETERR : 0);
 }
 
-void
+static void
 mdns_free(struct rr_entry *entries)
 {
         struct rr_entry *entry;
@@ -232,7 +237,7 @@ mdns_read_header(const uint8_t *ptr, size_t n, struct mdns_hdr *hdr)
         return ptr;
 }
 
-int
+static int
 mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];

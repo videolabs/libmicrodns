@@ -53,7 +53,7 @@ struct mdns_ctx;
 #define GET_OPCODE(x)   (x&0x7800)
 #define SET_OPCODE(x,c) (x|(c&0x7800))
 
- enum mdns_hdr_flag {
+enum mdns_hdr_flag {
        FLAG_QR = 1 << 15, // Question/Response
        FLAG_AA = 1 << 10, // Authoritative Answer
        FLAG_TC = 1 <<  9, // Truncated Response
@@ -83,8 +83,6 @@ typedef bool (*mdns_stop_func)(void*);
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_cleanup(struct mdns_ctx *ctx);
 extern int mdns_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
-extern void mdns_free(struct rr_entry *);
-extern int mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **);
 extern void mdns_print(const struct rr_entry *);
 extern int mdns_strerror(int, char *, size_t);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,

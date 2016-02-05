@@ -32,23 +32,35 @@
 #include "microdns.h"
 #include "rr.h"
 
+typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
+typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);
+typedef void (*rr_printer)(const union rr_data *);
+
+static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss);
+static uint8_t *rr_encode(char *s);
+
+const uint8_t * rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry, int8_t ans);
 static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_PTR(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
+size_t rr_write(uint8_t *ptr, const struct rr_entry *entry, int8_t ans);
 static size_t rr_write_SRV(uint8_t *, const struct rr_entry *);
 static size_t rr_write_PTR(uint8_t *, const struct rr_entry *);
 static size_t rr_write_TXT(uint8_t *, const struct rr_entry *);
 static size_t rr_write_AAAA(uint8_t *, const struct rr_entry *);
 static size_t rr_write_A(uint8_t *, const struct rr_entry *);
 
+void rr_print(const struct rr_entry *entry);
 static void rr_print_SRV(const union rr_data *);
 static void rr_print_PTR(const union rr_data *);
 static void rr_print_TXT(const union rr_data *);
 static void rr_print_AAAA(const union rr_data *);
 static void rr_print_A(const union rr_data *);
+
+void rr_free(struct rr_entry *entry);
 
 static const char *rr_type_str(enum rr_type);
 static const char *rr_class_str(enum rr_class);
@@ -268,7 +280,7 @@ rr_print_A(const union rr_data *data)
  * Decodes a DN compressed format (RFC 1035)
  * e.g "\x03foo\x03bar\x00" gives "foo.bar"
  */
-const uint8_t *
+static const uint8_t *
 rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 {
         char *s;
@@ -325,7 +337,7 @@ err:
  * Encode a DN into its compressed format (RFC 1035)
  * e.g "foo.bar" gives "\x03foo\x03bar\x00"
  */
-uint8_t *
+static uint8_t *
 rr_encode(char *s)
 {
         uint8_t *buf, *b, l = 0;

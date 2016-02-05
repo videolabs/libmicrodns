@@ -24,7 +24,7 @@
 
 volatile sig_atomic_t sigflag = 0;
 
-void sighandler(int signum)
+static void sighandler(int signum)
 {
         char s[] = "SIGINT received, exiting ...\n";
 
@@ -32,12 +32,12 @@ void sighandler(int signum)
         sigflag = 1;
 }
 
-bool stop(void *p_cookie)
+static bool stop(void *p_cookie)
 {
         return (sigflag ? true : false);
 }
 
-void callback(void *p_cookie, int status, const struct rr_entry *entries)
+static void callback(void *p_cookie, int status, const struct rr_entry *entries)
 {
         char err[128];
 

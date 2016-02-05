@@ -347,10 +347,16 @@ mdns_listen_m(const struct mdns_ctx *ctx, const char *const names[],
                 }
                 r = mdns_recv(ctx, &ahdr, &entries);
                 if (r == MDNS_NETERR && os_wouldblock())
+                {
+                        mdns_free(entries);
                         continue;
+                }
 
                 if (ahdr.num_ans_rr + ahdr.num_add_rr == 0)
+                {
+                        mdns_free(entries);
                         continue;
+                }
 
                 for (struct rr_entry *entry = entries; entry; entry = entry->next) {
                         for (unsigned int i = 0; i < nb_names; ++i) {

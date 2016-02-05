@@ -307,9 +307,9 @@ strrcmp(const char *s1, const char *s2)
 }
 
 int
-mdns_listen_m(const struct mdns_ctx *ctx, const char *const names[],
-              unsigned int nb_names, enum rr_type type, unsigned int interval,
-              mdns_stop_func stop, mdns_callback callback, void *p_cookie)
+mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
+            unsigned int nb_names, enum rr_type type, unsigned int interval,
+            mdns_stop_func stop, mdns_callback callback, void *p_cookie)
 {
         int r;
         time_t t1, t2;
@@ -369,13 +369,6 @@ mdns_listen_m(const struct mdns_ctx *ctx, const char *const names[],
                 mdns_free(entries);
         }
         return (0);
-}
-
-int
-mdns_listen(const struct mdns_ctx *ctx, const char *name, enum rr_type type, unsigned int interval,
-    mdns_stop_func stop, mdns_callback callback, void *p_cookie)
-{
-        return mdns_listen_m(ctx, &name, 1, type, interval, stop, callback, p_cookie);
 }
 
 int

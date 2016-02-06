@@ -1,3 +1,8 @@
 libmicrodns 0.0.1
 -----------------
- * First release
+
+ First release!
+
+ * Basic listening for mDNS services
+ * Basic announce of mDNS services
+ * Works on Windows (XP to 10), GNU/Linux

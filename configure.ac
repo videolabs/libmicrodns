@@ -226,6 +226,7 @@ AC_CONFIG_FILES([
 Makefile
 src/microdns.pc
 src/microdns.h
+doc/Doxyfile
 ])
 
 AC_OUTPUT

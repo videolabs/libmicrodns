@@ -82,25 +82,98 @@ typedef bool (*mdns_stop_func)(void*);
 /**
  * @brief Allocates and initialize a new mdns context
  *
- * @param ctx Returns the allocated context for the library
+ * @param ctx Returns the allocated context for the library [OUT]
  * @param addr Address to listen to
  * @param port Port to listen on
  *
- * @return 0 if success
+ * @see use mdns_destroy() to clean
+ *
+ * @return 0 if success, negative in other cases
  */
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
+
+/**
+ * @brief Destroy an mdns context
+ *
+ * @param ctx The context created by mdns_init()
+ *
+ * @return 0 if success, negative in other cases
+ */
 extern int mdns_destroy(struct mdns_ctx *ctx);
+
+
+/**
+ * @brief Send the entries on the network
+ *
+ * @param ctx A mdns context created by mdns_init()
+ * @param hdr A mdns_hdr header
+ * @param entries The entries to send
+ *
+ * @return 0 if successful, negative in other cases
+ */
 extern int mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
+
+/**
+ * @brief Print in human form an entry to debug
+ *
+ * @param entry The entry one wants to debug
+ */
 extern void mdns_entries_print(const struct rr_entry *);
 
-extern int mdns_strerror(int, char *, size_t);
+/**
+ * @brief Wrapper around strerror to get strings from errors
+ *
+ * @param error The error number
+ * @param buf The buffer where the string can be written
+ * @param n The maximum of characters that can be written inside buf
+ *
+ * @return 0 if success, negative in other cases
+ */
+extern int mdns_strerror(int error, char *buf, size_t n);
 
+/**
+ * @brief The main listening function for mDNS
+ *
+ * @param ctx A mdns context created by mdns_init()
+ * @param names The list of names of the services you are looking for
+ * @param nb_names The number of names in names list
+ * @param type The type of Record you want \see rr_type
+ * @param interval The refreshing interval to do the request
+ * @param stop The stop function to stop the discovery
+ * @param callback The callback function to receive the entries
+ * @param p_cookie user data for the callback
+ *
+ * @return 0 if success, negative in other cases
+ */
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                        unsigned int nb_names, enum rr_type type,
                        unsigned int interval, mdns_stop_func stop,
                        mdns_callback callback, void *p_cookie);
-extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type,
+
+/**
+ * @brief The main sending function for mDNS
+ *
+ * @param ctx A mdns context created by mdns_init()
+ * @param service The name of the services you want to announce
+ * @param type The type of Record you want \see rr_type
+ * @param callback The callback function to announce the entries
+ * @param p_cookie user data for the callback
+ *
+ * @return 0 if success, negative in other cases
+ */
+extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
         mdns_callback callback, void *p_cookie);
+
+/**
+ * @brief The main serving function for mDNS
+ *
+ * @param ctx A mdns context created by mdns_init()
+ * @param stop The stop function to stop the discovery
+ * @param p_cookie user data for the callback
+ *
+ * @return 0 if success, negative in other cases
+ */
+
 extern int mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie);
 
 # ifdef __cplusplus

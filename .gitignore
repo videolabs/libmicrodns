@@ -57,6 +57,6 @@ m4/lt~obsolete.m4
 build*
 
 # Generated files
-src/microdns.h
+src/version.h
 src/microdns.pc
 

@@ -225,7 +225,7 @@ PKG_INSTALLDIR
 AC_CONFIG_FILES([
 Makefile
 src/microdns.pc
-src/microdns.h
+src/version.h
 doc/Doxyfile
 ])
 

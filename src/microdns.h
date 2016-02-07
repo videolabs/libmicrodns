@@ -27,6 +27,11 @@
 #ifndef MICRODNS_MDNS_H
 #define MICRODNS_MDNS_H
 
+/**
+ * @file microdns.h
+ * @brief main functions to listen and announce services
+ */
+
 #include <stdbool.h>
 
 #include "rr.h"
@@ -36,12 +41,6 @@ extern "C" {
 # endif
 
 struct mdns_ctx;
-
-#define MICRODNS_VERSION_NAME  "@VERSION@"
-#define MICRODNS_VERSION_INT   (@MICRODNS_MAJOR@<<16 | @MICRODNS_MINOR@<<8 | @MICRODNS_MICRO@)
-#define MICRODNS_MAJOR         @MICRODNS_MAJOR@
-#define MICRODNS_MINOR         @MICRODNS_MINOR@
-#define MICRODNS_MICRO         @MICRODNS_MICRO@
 
 #define MDNS_PORT        5353
 #define MDNS_ADDR_IPV4   "224.0.0.251"
@@ -80,6 +79,15 @@ typedef void (*mdns_callback)(void*, int, const struct rr_entry *);
  */
 typedef bool (*mdns_stop_func)(void*);
 
+/**
+ * @brief Allocates and initialize a new mdns context
+ *
+ * @param ctx Returns the allocated context for the library
+ * @param addr Address to listen to
+ * @param port Port to listen on
+ *
+ * @return 0 if success
+ */
 extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 extern int mdns_destroy(struct mdns_ctx *ctx);
 extern int mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);

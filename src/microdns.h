@@ -138,7 +138,7 @@ extern int mdns_strerror(int error, char *buf, size_t n);
  * @param names The list of names of the services you are looking for
  * @param nb_names The number of names in names list
  * @param type The type of Record you want \see rr_type
- * @param interval The refreshing interval to do the request
+ * @param interval The refreshing interval to send a probe request (in seconds)
  * @param stop The stop function to stop the discovery
  * @param callback The callback function to receive the entries
  * @param p_cookie user data for the callback
@@ -151,12 +151,12 @@ extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                        mdns_callback callback, void *p_cookie);
 
 /**
- * @brief The main sending function for mDNS
+ * @brief Announce a new name to serve
  *
  * @param ctx A mdns context created by mdns_init()
  * @param service The name of the services you want to announce
  * @param type The type of Record you want \see rr_type
- * @param callback The callback function to announce the entries
+ * @param callback The callback function to send the entries
  * @param p_cookie user data for the callback
  *
  * @return 0 if success, negative in other cases
@@ -166,6 +166,7 @@ extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type
 
 /**
  * @brief The main serving function for mDNS
+ * mdns_announce() must be called before for each service you want to announce.
  *
  * @param ctx A mdns context created by mdns_init()
  * @param stop The stop function to stop the discovery

@@ -1,7 +1,7 @@
 /*****************************************************************************
  * This file is part of libmicrodns.
  *
- * Copyright © 2014-2015 VideoLabs SAS
+ * Copyright © 2014-2016 VideoLabs SAS
  *
  * Author: Jonathan Calmels <jbjcalmels@gmail.com>
  *

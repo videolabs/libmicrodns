@@ -96,23 +96,24 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
         if (p_ctx == NULL)
             return (MDNS_STDERR);
+        *p_ctx = NULL;
 
-        *p_ctx = malloc(sizeof(struct mdns_ctx));
-        if (*p_ctx == NULL)
+        ctx = malloc(sizeof(struct mdns_ctx));
+        if (ctx == NULL)
             return (MDNS_STDERR);
-        ctx = *p_ctx;
 
+        ctx->services = NULL;
         ctx->sock = INVALID_SOCKET;
         errno = os_init("2.2");
         if (errno != 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
         if (mdns_resolve(&ctx->addr, addr, port) < 0)
-                return (MDNS_LKPERR);
+                return mdns_destroy(ctx), (MDNS_LKPERR);
 
         if ((ctx->sock = socket(ss_family(&ctx->addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
 #ifdef _WIN32
         /* bind the receiver on any local address */
         memset(&dumb, 0, sizeof(dumb));
@@ -126,20 +127,20 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
         }
 
         if (bind(ctx->sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
 #else /* _WIN32 */
         if (bind(ctx->sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
 #endif /* _WIN32 */
 
         if (os_mcast_join(ctx->sock, &ctx->addr) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
         if (setsockopt(ctx->sock, ss_level(&ctx->addr), ss_family(&ctx->addr)==AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, (const void *) &ttl, sizeof(ttl)) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
         if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
-                return (MDNS_NETERR);
+                return mdns_destroy(ctx), (MDNS_NETERR);
 
-        ctx->services = NULL;
+        *p_ctx = ctx;
         return (0);
 }
 

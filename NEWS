@@ -1,3 +1,7 @@
+libmicrodns 0.0.2
+-----------------
+ * Fix leaks and possible crashes in init
+
 libmicrodns 0.0.1
 -----------------
 

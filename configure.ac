@@ -29,8 +29,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_HEADER_ASSERT
 
-AC_CHECK_FUNCS([inet_ntop])
-
 dnl check for -Wall -Wextra support
 CC_CHECK_CFLAG_APPEND([-Wall -Wsign-compare -Wextra -Wstrict-aliasing -Wstrict-overflow -Wformat=2 -Wno-unused-parameter -pipe -Wcast-align -Wpointer-arith -Wmissing-prototypes -Wwrite-strings -Wlogical-op])
 
@@ -217,6 +215,24 @@ case "${host_os}" in
     ;;
 esac
 AM_CONDITIONAL(HAVE_WIN32,   test "${SYS}" = "mingw32")
+
+LIBS_SAVE=${LIBS}
+LIBS="${LIBS} ${LIBSOCKET}"
+AC_LINK_IFELSE([
+    AC_LANG_PROGRAM([#ifdef _WIN32
+        # if _WIN32_WINNT < 0x600
+        #  error Needs vista+
+        # endif
+        #include <ws2tcpip.h>
+        #else
+        #include <sys/socket.h>
+        #include <arpa/inet.h>
+        #endif], [
+        inet_ntop(AF_INET, NULL, NULL, 0);
+    ])],[AC_DEFINE([HAVE_INET_NTOP],[1],[Define to 1 if you have inet_ntop function])],[AC_LIBOBJ([inet_ntop])])
+
+LIBS=${LIBS_SAVE}
+
 
 AC_SUBST([LIBSOCKET])
 

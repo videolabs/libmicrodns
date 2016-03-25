@@ -1,3 +1,7 @@
+libmicrodns 0.0.3
+ * Fix build on Windows Vista+
+
+-----------------
 libmicrodns 0.0.2
 -----------------
  * Fix leaks and possible crashes in init

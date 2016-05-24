@@ -319,8 +319,10 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
         int r;
         time_t t1, t2;
         struct mdns_hdr hdr = {0};
-        struct rr_entry qns[nb_names];
-        memset(qns, 0, sizeof(qns));
+        struct rr_entry *qns = malloc(nb_names * sizeof(struct rr_entry));
+        if (qns == NULL)
+            return (MDNS_STDERR);
+        memset(qns, 0, nb_names * sizeof(struct rr_entry));
 
         hdr.num_qn = nb_names;
         for (unsigned int i = 0; i < nb_names; ++i)
@@ -333,9 +335,15 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
         }
 
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-                return (MDNS_NETERR);
+        {
+            free(qns);
+            return (MDNS_NETERR);
+        }
         if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-                return (MDNS_NETERR);
+        {
+            free(qns);
+            return (MDNS_NETERR);
+        }
 
         if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) // send a first probe request
                 callback(p_cookie, r, NULL);
@@ -373,6 +381,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                 }
                 mdns_free(entries);
         }
+        free(qns);
         return (0);
 }
 

@@ -275,6 +275,7 @@ mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **en
         return (0);
 err:
         mdns_free(*entries);
+        *entries = NULL;
         return (MDNS_STDERR);
 }
 

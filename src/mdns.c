@@ -255,6 +255,7 @@ mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **en
                 return (MDNS_NETERR);
 
         const uint8_t *ptr = mdns_read_header(buf, length, hdr);
+        n = length;
 
         num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
         for (size_t i = 0; i < num_entry; ++i) {

@@ -25,6 +25,8 @@ enum {
         USE_FMTMSG_ = -3,
 };
 
+#define ARRAY_ENTRIES(array) (sizeof(array) / sizeof(array[0]))
+
 /*
  * POSIX systems
  */
@@ -66,6 +68,8 @@ static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 # include <winsock2.h>
 # include <windows.h>
 # include <ws2tcpip.h>
+# include <tchar.h>
+# include <strsafe.h>
 
 /* MinGW lacks AI_NUMERICSERV */
 # ifndef AI_NUMERICSERV

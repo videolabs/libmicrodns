@@ -53,7 +53,7 @@ os_t2a(char *dst, size_t chars, PCTSTR src)
 #if defined (UNICODE)
         return (WideCharToMultiByte(CP_ACP, 0, src, -1, dst, chars, NULL, NULL) != 0) ? 0 : -1;
 #else
-        return (SUCCEEDED(StringCchCopy(dst, chars, src)) ? 0 : -1;
+        return (SUCCEEDED(StringCchCopy(dst, chars, src))) ? 0 : -1;
 #endif
 }
 

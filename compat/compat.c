@@ -97,6 +97,7 @@ os_gai_strerror(int errcode, char *buf, size_t buflen)
         s = gai_strerror(errcode);
         strncpy(buf, s, buflen);
         buf[buflen - 1] = '\0';
+        return 0;
 }
 
 #endif // _WIN32

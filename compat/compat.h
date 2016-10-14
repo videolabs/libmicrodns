@@ -68,8 +68,6 @@ static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 # include <winsock2.h>
 # include <windows.h>
 # include <ws2tcpip.h>
-# include <tchar.h>
-# include <strsafe.h>
 
 /* MinGW lacks AI_NUMERICSERV */
 # ifndef AI_NUMERICSERV

@@ -27,6 +27,11 @@
 #include "compat.h"
 #include "utils.h"
 
+#if defined (_WIN32)
+# include <tchar.h>
+# include <strsafe.h>
+#endif // _WIN32
+
 #if defined (__unix__) || defined (__APPLE__)
 struct timeval os_deadline = {
         .tv_sec = 0,

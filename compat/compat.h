@@ -25,6 +25,8 @@ enum {
         USE_FMTMSG_ = -3,
 };
 
+#define ARRAY_ENTRIES(array) (sizeof(array) / sizeof(array[0]))
+
 /*
  * POSIX systems
  */

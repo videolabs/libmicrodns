@@ -27,6 +27,11 @@
 #include "compat.h"
 #include "utils.h"
 
+#if defined (_WIN32)
+# include <tchar.h>
+# include <strsafe.h>
+#endif // _WIN32
+
 #if defined (__unix__) || defined (__APPLE__)
 struct timeval os_deadline = {
         .tv_sec = 0,
@@ -36,6 +41,70 @@ struct timeval os_deadline = {
 
 #if defined (_WIN32)
 uint32_t os_deadline = 1000;
+
+static int
+os_a2t(PTSTR dst, size_t chars, const char *src)
+{
+#if defined (UNICODE)
+        return (MultiByteToWideChar(CP_ACP, 0, src, -1, dst, chars) != 0) ? 0 : -1;
+#else
+        return (SUCCEEDED(StringCchCopy(dst, chars, src))) ? 0 : -1;
+#endif
+}
+
+static int
+os_t2a(char *dst, size_t chars, PCTSTR src)
+{
+#if defined (UNICODE)
+        return (WideCharToMultiByte(CP_ACP, 0, src, -1, dst, chars, NULL, NULL) != 0) ? 0 : -1;
+#else
+        return (SUCCEEDED(StringCchCopy(dst, chars, src))) ? 0 : -1;
+#endif
+}
+
+static int
+os_formatmessage(int last_error, char *buf, size_t buflen)
+{
+        int convert_result;
+        PTSTR message;
+        size_t message_size;
+
+        message_size = buflen * sizeof(message[0]);
+        message = malloc(message_size);
+        if (message == NULL)
+                return -1;
+        
+        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, 
+            last_error, 0, message, message_size, NULL))
+                StringCbPrintf(message, message_size, _T("Error %d\n"), last_error);
+
+        convert_result = os_t2a(buf, buflen, message);
+        free(message);
+        return convert_result;
+}
+
+static int
+os_gai_strerror(int errcode, char *buf, size_t buflen)
+{
+        PCTSTR s;
+
+        s = gai_strerror(errcode);
+        return os_t2a(buf, buflen, s);
+}
+
+#else
+
+static int
+os_gai_strerror(int errcode, char *buf, size_t buflen)
+{
+        const char *s;
+
+        s = gai_strerror(errcode);
+        strncpy(buf, s, buflen);
+        buf[buflen - 1] = '\0';
+        return 0;
+}
+
 #endif // _WIN32
 
 #if defined (_WIN32) && !defined(HAVE_INET_NTOP)
@@ -70,11 +139,14 @@ inet_pton(int af, const char *src, void *dst)
 {
         struct sockaddr_storage ss;
         int size = sizeof(ss);
-        char src_copy[INET6_ADDRSTRLEN+1];
+        TCHAR src_copy[INET6_ADDRSTRLEN+1];
 
         ZeroMemory(&ss, sizeof(ss));
-        strncpy (src_copy, src, INET6_ADDRSTRLEN+1);
-        src_copy[INET6_ADDRSTRLEN] = 0;
+        
+        if (os_a2t(src_copy, ARRAY_ENTRIES(src_copy), src) < 0)
+        {
+                return 0;
+        }
 
         if (WSAStringToAddress(src_copy, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
                 switch(af) {
@@ -102,22 +174,14 @@ os_strerror(int errnum, char *buf, size_t buflen)
         switch (errnum) {
 #if defined (_WIN32)
                 case USE_FMTMSG_:
-                        errno = WSAGetLastError();
-                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                            errno, 0, buf, buflen, NULL))
-                                snprintf(buf, buflen, "Error %d\n", errno);
+                        r = os_formatmessage(WSAGetLastError(), buf, buflen);
                         break;
 #endif
                 case USE_STRERROR_:
-                        if (strerror_r(errno, buf, buflen) != 0)
-                                return (-1);
+                        r = (strerror_r(errno, buf, buflen) == 0) ? 0 : -1;
                         break;
                 case USE_GAIERROR_: {
-                        const char *s;
-
-                        s = gai_strerror(errno);
-                        strncpy(buf, s, buflen);
-                        buf[buflen - 1] = '\0';
+                        r = os_gai_strerror(errno, buf, buflen);
                         break;
                 }
                 default:

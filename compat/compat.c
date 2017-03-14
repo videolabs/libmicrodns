@@ -113,7 +113,12 @@ os_strerror(int errnum, char *buf, size_t buflen)
                                 return (-1);
                         break;
                 case USE_GAIERROR_: {
+#ifndef _WIN32
                         const char *s;
+#else
+                        // Win32 gai_strerror returns a static buffer, but as a non-const char*
+                        char *s;
+#endif
 
                         s = gai_strerror(errno);
                         strncpy(buf, s, buflen);

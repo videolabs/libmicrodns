@@ -230,6 +230,17 @@ AC_LINK_IFELSE([
         #endif], [
         inet_ntop(AF_INET, NULL, NULL, 0);
     ])],[AC_DEFINE([HAVE_INET_NTOP],[1],[Define to 1 if you have inet_ntop function])],[AC_LIBOBJ([inet_ntop])])
+AC_LINK_IFELSE([
+    AC_LANG_PROGRAM([#ifdef _WIN32
+        # if _WIN32_WINNT < 0x600
+        #  error Needs vista+
+        # endif
+        #include <winsock2.h>
+        #else
+        #include <poll.h>
+        #endif], [
+        poll(NULL, 0, NULL, NULL);
+    ])],[AC_DEFINE([HAVE_POLL],[1],[Define to 1 if you have poll function])])
 
 LIBS=${LIBS_SAVE}
 

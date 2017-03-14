@@ -37,6 +37,9 @@ enum {
 # include <netdb.h>
 # include <sys/types.h>
 # include <errno.h>
+# include <ifaddrs.h>
+# include <net/if.h>
+# include <poll.h>
 
 extern struct timeval os_deadline;
 

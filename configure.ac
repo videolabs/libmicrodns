@@ -190,7 +190,7 @@ case "${host_os}" in
                 PROGRAMFILES="PROGRAMFILES"
             ;;
         esac
-        LIBSOCKET='-lws2_32'
+        LIBSOCKET='-lws2_32 -liphlpapi'
         AC_SUBST(WINDOWS_ARCH)
         AC_SUBST(PROGRAMFILES)
 

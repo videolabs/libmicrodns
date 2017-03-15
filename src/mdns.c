@@ -48,9 +48,18 @@ struct mdns_svc {
         struct mdns_svc *next;
 };
 
+#ifndef _WIN32
+typedef struct sockaddr_storage multicast_if;
+#else
+typedef DWORD multicast_if;
+#endif
+
 struct mdns_conn {
         sock_t sock;
-        struct sockaddr_storage if_addr;
+        // Since windows doesn't use a regular sockaddr struct, we have to keep
+        // track of the protocol family
+        unsigned int family;
+        multicast_if if_addr;
 };
 
 struct mdns_ctx {
@@ -69,6 +78,8 @@ extern size_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
 extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 
+#ifndef _WIN32
+
 static bool
 mdns_is_interface_valuable(struct ifaddrs* ifa)
 {
@@ -83,12 +94,12 @@ mdns_is_interface_valuable(struct ifaddrs* ifa)
 }
 
 static size_t
-mdns_list_interfaces(struct sockaddr_storage** pp_intfs, int ai_family)
+mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
 {
         struct ifaddrs *ifs;
         struct ifaddrs *c;
         size_t nb_if;
-        struct sockaddr_storage* intfs;
+        multicast_if* intfs;
 
         if (getifaddrs(&ifs) || ifs == NULL)
                 return (0);
@@ -117,12 +128,82 @@ mdns_list_interfaces(struct sockaddr_storage** pp_intfs, int ai_family)
         return (nb_if);
 }
 
+#else
+
+static bool
+mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf)
+{
+    return (intf->IfType == IF_TYPE_IEEE80211 || intf->IfType == IF_TYPE_ETHERNET_CSMACD) &&
+            intf->OperStatus == IfOperStatusUp;
+}
+
+static size_t
+mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+{
+        multicast_if* intfs;
+        IP_ADAPTER_ADDRESSES *res = NULL, *current;
+        ULONG size;
+        HRESULT hr;
+        size_t nb_intf = 0;
+
+        /**
+         * https://msdn.microsoft.com/en-us/library/aa365915.aspx
+         *
+         * The recommended method of calling the GetAdaptersAddresses function is to pre-allocate a
+         * 15KB working buffer pointed to by the AdapterAddresses parameter. On typical computers,
+         * this dramatically reduces the chances that the GetAdaptersAddresses function returns
+         * ERROR_BUFFER_OVERFLOW, which would require calling GetAdaptersAddresses function multiple
+         * times. The example code illustrates this method of use.
+         */
+        size = 15 * 1024;
+        do
+        {
+                free(res);
+                res = malloc( size );
+                if (res == NULL)
+                        return (0);
+                hr = GetAdaptersAddresses(ai_family, GAA_FLAG_SKIP_UNICAST |
+                                                    GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER,
+                                                    NULL, res, &size);
+        } while (hr == ERROR_BUFFER_OVERFLOW);
+        if (hr != NO_ERROR) {
+                free(res);
+                return (0);
+        }
+
+        for (current = res; current != NULL; current = current->Next) {
+                if (!mdns_is_interface_valuable(current))
+                        continue;
+                ++nb_intf;
+        }
+        if (nb_intf == 0)
+                return (0);
+
+        *pp_intfs = intfs = malloc(nb_intf * sizeof(*intfs));
+        if (intfs == NULL) {
+                free(res);
+                return (0);
+        }
+        for (current = res; current != NULL; current = current->Next) {
+                if (!mdns_is_interface_valuable(current))
+                        continue;
+                if (ai_family == AF_INET6)
+                        *intfs = htonl(current->Ipv6IfIndex);
+                else
+                        *intfs = htonl(current->IfIndex);
+                ++intfs;
+        }
+        return (nb_intf);
+}
+
+#endif
+
 static int
 mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 {
         char buf[6];
         struct addrinfo hints, *res = NULL;
-        struct sockaddr_storage* ifaddrs;
+        multicast_if* ifaddrs = NULL;
         size_t i;
 
         sprintf(buf, "%hu", port);
@@ -149,6 +230,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;
                 ctx->conns[i].if_addr = ifaddrs[i];
+                ctx->conns[i].family = res->ai_family;
         }
         free(ifaddrs);
         freeaddrinfo(res);
@@ -188,13 +270,9 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                 return mdns_destroy(ctx), (MDNS_LKPERR);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i ) {
-                if ((ctx->conns[i].sock = socket(ss_family(&ctx->addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+                if ((ctx->conns[i].sock = socket(ctx->conns[i].family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                         return mdns_destroy(ctx), (MDNS_NETERR);
                 if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
-                        return mdns_destroy(ctx), (MDNS_NETERR);
-                if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].if_addr),
-                               ss_family(&ctx->addr) == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
-                               (const void*)&ctx->conns[i].if_addr, sizeof(ctx->conns[i].if_addr)))
                         return mdns_destroy(ctx), (MDNS_NETERR);
     #ifdef _WIN32
             /* bind the receiver on any local address */
@@ -217,10 +295,23 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
             if (os_mcast_join(ctx->conns[i].sock, &ctx->addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
-            if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->addr), ss_family(&ctx->addr)==AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, (const void *) &ttl, sizeof(ttl)) < 0)
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
+                           (const void *) &ttl, sizeof(ttl)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
-            if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
+            }
+
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
+            }
+
+            if (setsockopt(ctx->conns[i].sock,
+                           ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
+                           (const void*)&ctx->conns[i].if_addr, sizeof(ctx->conns[i].if_addr))) {
+                    return mdns_destroy(ctx), (MDNS_NETERR);
+            }
         }
 
         *p_ctx = ctx;

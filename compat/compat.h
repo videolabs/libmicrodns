@@ -37,6 +37,9 @@ enum {
 # include <netdb.h>
 # include <sys/types.h>
 # include <errno.h>
+# include <ifaddrs.h>
+# include <net/if.h>
+# include <poll.h>
 
 extern struct timeval os_deadline;
 
@@ -66,6 +69,7 @@ static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 # include <winsock2.h>
 # include <windows.h>
 # include <ws2tcpip.h>
+# include <iphlpapi.h>
 
 /* MinGW lacks AI_NUMERICSERV */
 # ifndef AI_NUMERICSERV
@@ -104,6 +108,28 @@ extern int inet_pton(int af, const char *src, void *dst);
 # endif // !inet_ntop
 
 #endif // _WIN32
+
+#ifndef HAVE_POLL
+enum
+{
+    POLLERR=0x1,
+    POLLHUP=0x2,
+    POLLNVAL=0x4,
+    POLLWRNORM=0x10,
+    POLLWRBAND=0x20,
+    POLLRDNORM=0x100,
+    POLLRDBAND=0x200,
+    POLLPRI=0x400,
+};
+#define POLLIN  (POLLRDNORM|POLLRDBAND)
+struct pollfd
+{
+    int fd;
+    unsigned events;
+    unsigned revents;
+};
+int poll(struct pollfd *fds, unsigned nfds, int timeout);
+#endif
 
 extern int os_strerror(int, char *, size_t);
 extern int os_mcast_join(sock_t, const struct sockaddr_storage *);

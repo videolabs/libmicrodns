@@ -48,13 +48,28 @@ struct mdns_svc {
         struct mdns_svc *next;
 };
 
-struct mdns_ctx {
+#ifndef _WIN32
+typedef struct sockaddr_storage multicast_if;
+#else
+typedef DWORD multicast_if;
+#endif
+
+struct mdns_conn {
         sock_t sock;
+        // Since windows doesn't use a regular sockaddr struct, we have to keep
+        // track of the protocol family
+        unsigned int family;
+        multicast_if if_addr;
+};
+
+struct mdns_ctx {
+        struct mdns_conn *conns;
+        size_t nb_conns;
         struct sockaddr_storage addr;
         struct mdns_svc *services;
 };
 
-static int mdns_resolve(struct sockaddr_storage *, const char *, unsigned short);
+static int mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port);
 static ssize_t mdns_write_hdr(uint8_t *, const struct mdns_hdr *);
 static int strrcmp(const char *, const char *);
 
@@ -63,22 +78,157 @@ extern size_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
 extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 
+#ifndef _WIN32
+
+static bool
+mdns_is_interface_valuable(struct ifaddrs* ifa)
+{
+    return ifa->ifa_addr != NULL && (ifa->ifa_addr->sa_family == AF_INET ||
+                                     ifa->ifa_addr->sa_family == AF_INET6) &&
+            (ifa->ifa_flags & IFF_LOOPBACK) == 0 &&
+            (ifa->ifa_flags & IFF_UP) != 0 &&
+            (ifa->ifa_flags & IFF_RUNNING) != 0 &&
+            ((ifa->ifa_addr->sa_family == AF_INET6 &&
+                    ((struct sockaddr_in6*)(ifa->ifa_addr))->sin6_scope_id == 0) ||
+                ifa->ifa_addr->sa_family == AF_INET);
+}
+
+static size_t
+mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+{
+        struct ifaddrs *ifs;
+        struct ifaddrs *c;
+        size_t nb_if;
+        multicast_if* intfs;
+
+        if (getifaddrs(&ifs) || ifs == NULL)
+                return (0);
+        nb_if = 0;
+        for (c = ifs; c != NULL; c = c->ifa_next) {
+                if (c->ifa_addr->sa_family != ai_family || !mdns_is_interface_valuable(c))
+                        continue;
+                nb_if++;
+        }
+        *pp_intfs = intfs = malloc(sizeof(*intfs) * nb_if);
+        if (intfs == NULL) {
+                freeifaddrs(ifs);
+                return (0);
+        }
+        for (c = ifs; c != NULL; c = c->ifa_next) {
+                if (c->ifa_addr->sa_family != ai_family || !mdns_is_interface_valuable(c))
+                        continue;
+                memcpy(intfs, c->ifa_addr, sizeof(*intfs));
+                intfs++;
+        }
+        freeifaddrs(ifs);
+        return (nb_if);
+}
+
+#else
+
+static bool
+mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf)
+{
+    return (intf->IfType == IF_TYPE_IEEE80211 || intf->IfType == IF_TYPE_ETHERNET_CSMACD) &&
+            intf->OperStatus == IfOperStatusUp;
+}
+
+static size_t
+mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+{
+        multicast_if* intfs;
+        IP_ADAPTER_ADDRESSES *res = NULL, *current;
+        ULONG size;
+        HRESULT hr;
+        size_t nb_intf = 0;
+
+        /**
+         * https://msdn.microsoft.com/en-us/library/aa365915.aspx
+         *
+         * The recommended method of calling the GetAdaptersAddresses function is to pre-allocate a
+         * 15KB working buffer pointed to by the AdapterAddresses parameter. On typical computers,
+         * this dramatically reduces the chances that the GetAdaptersAddresses function returns
+         * ERROR_BUFFER_OVERFLOW, which would require calling GetAdaptersAddresses function multiple
+         * times. The example code illustrates this method of use.
+         */
+        size = 15 * 1024;
+        do
+        {
+                free(res);
+                res = malloc( size );
+                if (res == NULL)
+                        return (0);
+                hr = GetAdaptersAddresses(ai_family, GAA_FLAG_SKIP_UNICAST |
+                                                    GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER,
+                                                    NULL, res, &size);
+        } while (hr == ERROR_BUFFER_OVERFLOW);
+        if (hr != NO_ERROR) {
+                free(res);
+                return (0);
+        }
+
+        for (current = res; current != NULL; current = current->Next) {
+                if (!mdns_is_interface_valuable(current))
+                        continue;
+                ++nb_intf;
+        }
+        if (nb_intf == 0)
+                return (0);
+
+        *pp_intfs = intfs = malloc(nb_intf * sizeof(*intfs));
+        if (intfs == NULL) {
+                free(res);
+                return (0);
+        }
+        for (current = res; current != NULL; current = current->Next) {
+                if (!mdns_is_interface_valuable(current))
+                        continue;
+                if (ai_family == AF_INET6)
+                        *intfs = htonl(current->Ipv6IfIndex);
+                else
+                        *intfs = htonl(current->IfIndex);
+                ++intfs;
+        }
+        return (nb_intf);
+}
+
+#endif
+
 static int
-mdns_resolve(struct sockaddr_storage *ss, const char *addr, unsigned short port)
+mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 {
         char buf[6];
         struct addrinfo hints, *res = NULL;
+        multicast_if* ifaddrs = NULL;
+        size_t i;
 
         sprintf(buf, "%hu", port);
         memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
-
         errno = getaddrinfo(addr, buf, &hints, &res);
         if (errno != 0)
                 return (MDNS_LKPERR);
-        memcpy(ss, res->ai_addr, res->ai_addrlen);
+
+        ctx->nb_conns = mdns_list_interfaces(&ifaddrs, res->ai_family);
+        if (ctx->nb_conns == 0) {
+                freeaddrinfo(res);
+                return (MDNS_LKPERR);
+        }
+        memcpy(&ctx->addr, res->ai_addr, res->ai_addrlen);
+        ctx->conns = malloc(ctx->nb_conns * sizeof(*ctx->conns));
+        if (ctx->conns == NULL) {
+                free(ifaddrs);
+                freeaddrinfo(res);
+                return (MDNS_LKPERR);
+        }
+        for (i = 0; i < ctx->nb_conns; ++i ) {
+                ctx->conns[i].sock = INVALID_SOCKET;
+                ctx->conns[i].if_addr = ifaddrs[i];
+                ctx->conns[i].family = res->ai_family;
+        }
+        free(ifaddrs);
         freeaddrinfo(res);
         return (0);
 }
@@ -107,42 +257,58 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
             return (MDNS_STDERR);
 
         ctx->services = NULL;
-        ctx->sock = INVALID_SOCKET;
+        ctx->conns = NULL;
+        ctx->nb_conns = 0;
         errno = os_init("2.2");
         if (errno != 0)
                 return mdns_destroy(ctx), (MDNS_NETERR);
-        if (mdns_resolve(&ctx->addr, addr, port) < 0)
+        if (mdns_resolve(ctx, addr, port) < 0)
                 return mdns_destroy(ctx), (MDNS_LKPERR);
 
-        if ((ctx->sock = socket(ss_family(&ctx->addr), SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
-                return mdns_destroy(ctx), (MDNS_NETERR);
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
-#ifdef _WIN32
-        /* bind the receiver on any local address */
-        memset(&dumb, 0, sizeof(dumb));
-        dumb.ss.ss_family = ss_family(&ctx->addr);
-        if (dumb.ss.ss_family == AF_INET) {
-            dumb.sin.sin_port = htons(port);
-            dumb.sin.sin_addr.s_addr = INADDR_ANY;
-        } else {
-            dumb.sin6.sin6_port = htons(port);
-            dumb.sin6.sin6_addr = in6addr_any;
-        }
+        for (size_t i = 0; i < ctx->nb_conns; ++i ) {
+                if ((ctx->conns[i].sock = socket(ctx->conns[i].family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+                        return mdns_destroy(ctx), (MDNS_NETERR);
+                if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
+                        return mdns_destroy(ctx), (MDNS_NETERR);
+    #ifdef _WIN32
+            /* bind the receiver on any local address */
+            memset(&dumb, 0, sizeof(dumb));
+            dumb.ss.ss_family = ss_family(&ctx->addr);
+            if (dumb.ss.ss_family == AF_INET) {
+                dumb.sin.sin_port = htons(port);
+                dumb.sin.sin_addr.s_addr = INADDR_ANY;
+            } else {
+                dumb.sin6.sin6_port = htons(port);
+                dumb.sin6.sin6_addr = in6addr_any;
+            }
 
-        if (bind(ctx->sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
+            if (bind(ctx->conns[i].sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
+                    return mdns_destroy(ctx), (MDNS_NETERR);
 #else /* _WIN32 */
-        if (bind(ctx->sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
+            if (bind(ctx->conns[i].sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
+                    return mdns_destroy(ctx), (MDNS_NETERR);
 #endif /* _WIN32 */
 
-        if (os_mcast_join(ctx->sock, &ctx->addr) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
-        if (setsockopt(ctx->sock, ss_level(&ctx->addr), ss_family(&ctx->addr)==AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS, (const void *) &ttl, sizeof(ttl)) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
-        if (setsockopt(ctx->sock, ss_level(&ctx->addr), IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0)
-                return mdns_destroy(ctx), (MDNS_NETERR);
+            if (os_mcast_join(ctx->conns[i].sock, &ctx->addr) < 0)
+                    return mdns_destroy(ctx), (MDNS_NETERR);
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
+                           (const void *) &ttl, sizeof(ttl)) < 0) {
+                    return mdns_destroy(ctx), (MDNS_NETERR);
+            }
+
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0) {
+                    return mdns_destroy(ctx), (MDNS_NETERR);
+            }
+
+            if (setsockopt(ctx->conns[i].sock,
+                           ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
+                           (const void*)&ctx->conns[i].if_addr, sizeof(ctx->conns[i].if_addr))) {
+                    return mdns_destroy(ctx), (MDNS_NETERR);
+            }
+        }
 
         *p_ctx = ctx;
         return (0);
@@ -152,10 +318,14 @@ int
 mdns_destroy(struct mdns_ctx *ctx)
 {
         if (ctx != NULL) {
-                if (ctx->sock != INVALID_SOCKET) {
-                        os_close(ctx->sock);
-                        ctx->sock = INVALID_SOCKET;
+                for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                    struct mdns_conn *conn = &ctx->conns[i];
+                    if (conn->sock != INVALID_SOCKET) {
+                            os_close(conn->sock);
+                            conn->sock = INVALID_SOCKET;
+                    }
                 }
+                free(ctx->conns);
                 if (ctx->services) {
                         struct mdns_svc *svc;
 
@@ -208,10 +378,14 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
                 n += l;
         }
 
-        r = sendto(ctx->sock, (const char *) buf, n, 0,
-                (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr));
+        for (size_t i = 0; i < ctx->nb_conns; ++i) {
+            r = sendto(ctx->conns[i].sock, (const char *) buf, n, 0,
+                    (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr));
+            if (r < 0)
+                return (MDNS_NETERR);
+        }
 
-        return (r < 0 ? MDNS_NETERR : 0);
+        return (0);
 }
 
 static void
@@ -243,7 +417,7 @@ mdns_read_header(const uint8_t *ptr, size_t n, struct mdns_hdr *hdr)
 }
 
 static int
-mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **entries)
+mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];
         size_t num_entry, n;
@@ -251,7 +425,7 @@ mdns_recv(const struct mdns_ctx *ctx, struct mdns_hdr *hdr, struct rr_entry **en
         struct rr_entry *entry;
 
         *entries = NULL;
-        if ((length = recv(ctx->sock, (char *) buf, sizeof(buf), 0)) < 0)
+        if ((length = recv(conn->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (MDNS_NETERR);
 
         const uint8_t *ptr = mdns_read_header(buf, length, hdr);
@@ -336,15 +510,12 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                     qns[i].next = &qns[i+1];
         }
 
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-        {
-            free(qns);
-            return (MDNS_NETERR);
-        }
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-        {
-            free(qns);
-            return (MDNS_NETERR);
+        for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
+                {
+                        free(qns);
+                        return (MDNS_NETERR);
+                }
         }
 
         if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) // send a first probe request
@@ -352,7 +523,12 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
         for (t1 = t2 = time(NULL); stop(p_cookie) == false; t2 = time(NULL)) {
                 struct mdns_hdr ahdr = {0};
                 struct rr_entry *entries;
+                struct pollfd pfd[ctx->nb_conns];
 
+                for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                        pfd[i].fd = ctx->conns[i].sock;
+                        pfd[i].events = POLLIN;
+                }
                 if (difftime(t2, t1) >= (double) interval) {
                         if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) {
                                 callback(p_cookie, r, NULL);
@@ -360,28 +536,35 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                         }
                         t1 = t2;
                 }
-                r = mdns_recv(ctx, &ahdr, &entries);
-                if (r == MDNS_NETERR && os_wouldblock())
-                {
-                        mdns_free(entries);
+                if (poll(pfd, ctx->nb_conns, 1000) <= 0) {
                         continue;
                 }
+                for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                        if ((pfd[i].revents & POLLIN) == 0)
+                                continue;
+                        r = mdns_recv(&ctx->conns[i], &ahdr, &entries);
+                        if (r == MDNS_NETERR && os_wouldblock())
+                        {
+                                mdns_free(entries);
+                                continue;
+                        }
 
-                if (ahdr.num_ans_rr + ahdr.num_add_rr == 0)
-                {
-                        mdns_free(entries);
-                        continue;
-                }
+                        if (ahdr.num_ans_rr + ahdr.num_add_rr == 0)
+                        {
+                                mdns_free(entries);
+                                continue;
+                        }
 
-                for (struct rr_entry *entry = entries; entry; entry = entry->next) {
-                        for (unsigned int i = 0; i < nb_names; ++i) {
-                                if (!strrcmp(entry->name, names[i])) {
-                                        callback(p_cookie, r, entries);
-                                        break;
+                        for (struct rr_entry *entry = entries; entry; entry = entry->next) {
+                                for (unsigned int i = 0; i < nb_names; ++i) {
+                                        if (!strrcmp(entry->name, names[i])) {
+                                                callback(p_cookie, r, entries);
+                                                break;
+                                        }
                                 }
                         }
+                        mdns_free(entries);
                 }
-                mdns_free(entries);
         }
         free(qns);
         return (0);
@@ -416,22 +599,35 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
         struct mdns_hdr qhdr = {0};
         struct rr_entry *question;
 
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_RCVTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-                return (MDNS_NETERR);
-        if (setsockopt(ctx->sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
-                return (MDNS_NETERR);
+        for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
+                        return (MDNS_NETERR);
+        }
 
         for (; stop(p_cookie) == false;) {
-                r = mdns_recv(ctx, &qhdr, &question);
-                if (r == MDNS_NETERR)
-                        continue;
-                if (qhdr.num_qn == 0)
-                        goto again;
+                struct pollfd pfd[ctx->nb_conns];
 
-                for (svc = ctx->services; svc; svc = svc->next) {
-                        if (!strrcmp(question->name, svc->name) && question->type == svc->type) {
-                                svc->callback(svc->p_cookie, r, question);
+                for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                        pfd[i].fd = ctx->conns[i].sock;
+                        pfd[i].events = POLLIN;
+                }
+                if (poll(pfd, ctx->nb_conns, 1000) <= 0) {
+                        continue;
+                }
+                for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                        if ((pfd[i].revents & POLLIN) == 0)
+                                continue;
+                        r = mdns_recv(&ctx->conns[i], &qhdr, &question);
+                        if (r == MDNS_NETERR)
+                                continue;
+                        if (qhdr.num_qn == 0)
                                 goto again;
+
+                        for (svc = ctx->services; svc; svc = svc->next) {
+                                if (!strrcmp(question->name, svc->name) && question->type == svc->type) {
+                                        svc->callback(svc->p_cookie, r, question);
+                                        goto again;
+                                }
                         }
                 }
 again:

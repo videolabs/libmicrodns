@@ -92,11 +92,21 @@ os_strerror(int errnum, char *buf, size_t buflen)
         switch (errnum) {
 #if defined (_WIN32)
                 case USE_FMTMSG_:
+                {
+                        wchar_t* wbuff = malloc(sizeof((*wbuff) * buflen));
+                        if (wbuff == NULL)
+                            return (-1);
                         errno = WSAGetLastError();
-                        if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                            errno, 0, buf, buflen, NULL))
+                        DWORD nbChar = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+                                           NULL, errno, 0, wbuff, buflen, NULL);
+                        if (!nbChar)
                                 snprintf(buf, buflen, "Error %d\n", errno);
+                        nbChar = WideCharToMultiByte(CP_UTF8, 0, wbuff, nbChar, buf, buflen, NULL, NULL);
+                        free(wbuff);
+                        if (nbChar == 0)
+                                return (-1);
                         break;
+                }
 #endif
                 case USE_STRERROR_:
                         if (strerror_r(errno, buf, buflen) != 0)

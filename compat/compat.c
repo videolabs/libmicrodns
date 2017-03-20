@@ -65,28 +65,18 @@ inet_ntop(int af, const void *src, char *dst, socklen_t size)
         return (dst);
 }
 
-int
-inet_pton(int af, const char *src, void *dst)
+int inet_pton (int af, const char *src, void *dst)
 {
-        struct sockaddr_storage ss;
-        int size = sizeof(ss);
-        char src_copy[INET6_ADDRSTRLEN+1];
+    unsigned char *b = dst;
 
-        ZeroMemory(&ss, sizeof(ss));
-        strncpy (src_copy, src, INET6_ADDRSTRLEN+1);
-        src_copy[INET6_ADDRSTRLEN] = 0;
-
-        if (WSAStringToAddress(src_copy, af, NULL, (struct sockaddr *)&ss, &size) == 0) {
-                switch(af) {
-                        case AF_INET:
-                                *(struct in_addr *)dst = ((struct sockaddr_in *)&ss)->sin_addr;
-                                return 1;
-                        case AF_INET6:
-                                *(struct in6_addr *)dst = ((struct sockaddr_in6 *)&ss)->sin6_addr;
-                                return 1;
-                }
-        }
-        return 0;
+    switch (af)
+    {
+        case AF_INET:
+            return sscanf (src, "%hhu.%hhu.%hhu.%hhu",
+                           b + 0, b + 1, b + 2, b + 3) == 4;
+    }
+    errno = EAFNOSUPPORT;
+    return -1;
 }
 #endif // _WIN32 && !inet_ntop
 

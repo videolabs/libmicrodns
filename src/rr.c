@@ -295,10 +295,7 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 
         while (*ptr) {
                 size_t free_space;
-                const uint8_t *p;
                 uint16_t len;
-                char *buf;
-                size_t m;
 
                 free_space = *ss + MDNS_DN_MAXSZ - s;
                 len = *ptr;
@@ -306,6 +303,10 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 
                 /* resolve the offset of the pointer (RFC 1035-4.1.4) */
                 if ((len & 0xC0) == 0xC0) {
+                        const uint8_t *p;
+                        char *buf;
+                        size_t m;
+
                         if (*n < sizeof(len))
                                 goto err;
                         len &= ~0xC0;

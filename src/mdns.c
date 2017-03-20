@@ -442,6 +442,7 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
                         goto err;
                 ptr = rr_read(ptr, &n, buf, entry, (hdr->flags & FLAG_QR) > 0);
                 if (!ptr) {
+                        free(entry);
                         errno = ENOSPC;
                         goto err;
                 }

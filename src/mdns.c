@@ -49,7 +49,8 @@ struct mdns_svc {
 };
 
 #ifndef _WIN32
-# ifndef __ANDROID__
+# if HAVE_IFADDRS
+#include <ifaddrs.h>
 typedef struct sockaddr_storage multicast_if;
 # else
 typedef void* multicast_if;
@@ -83,7 +84,7 @@ extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 
 #ifndef _WIN32
-#ifndef __ANDROID__
+#if HAVE_IFADDRS
 
 static bool
 mdns_is_interface_valuable(struct ifaddrs* ifa)
@@ -142,8 +143,9 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
         **pp_intfs = NULL;
         return 1;
 }
-#endif // __ANDROID__
-#else
+#endif // HAVE_IFADDRS
+
+#else // _WIN32
 
 static bool
 mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf)
@@ -210,7 +212,6 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
         }
         return (nb_intf);
 }
-
 #endif
 
 static int
@@ -321,7 +322,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
-#ifndef __ANDROID__
+#if HAVE_IFADDRS
             if (setsockopt(ctx->conns[i].sock,
                            ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                            ctx->conns[i].family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,

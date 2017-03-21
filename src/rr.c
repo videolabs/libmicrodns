@@ -183,7 +183,8 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
                         return (NULL);
                 text->next = data->TXT;
                 data->TXT = text;
-                memcpy(text->txt, ptr, l);
+                if (l > 0)
+                        memcpy(text->txt, ptr, l);
                 text->txt[l] = '\0';
                 advance(l);
         }

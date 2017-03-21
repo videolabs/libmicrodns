@@ -373,7 +373,7 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
         uint16_t tmp;
 
         ptr = rr_decode(ptr, n, root, &entry->name);
-        if (!ptr || *n < 10)
+        if (!ptr || *n < 4)
                 return (NULL);
 
         ptr = read_u16(ptr, n, &entry->type);
@@ -381,6 +381,8 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
         entry->rr_class = (tmp & ~0x8000);
         entry->msbit = ((tmp & 0x8000) == 0x8000);
         if (ans) {
+                if (*n < 6)
+                        return (NULL);
                 ptr = read_u32(ptr, n, &entry->ttl);
                 ptr = read_u16(ptr, n, &entry->data_len);
         }

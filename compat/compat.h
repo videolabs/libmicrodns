@@ -37,9 +37,11 @@ enum {
 # include <netdb.h>
 # include <sys/types.h>
 # include <errno.h>
-# include <ifaddrs.h>
 # include <net/if.h>
 # include <poll.h>
+#ifndef __ANDROID__
+# include <ifaddrs.h>
+#endif
 
 extern struct timeval os_deadline;
 

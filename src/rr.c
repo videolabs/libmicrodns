@@ -293,6 +293,11 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
         if (!s)
                 return (NULL);
 
+        if (*ptr == 0) {
+                *s = '\0';
+                advance(1);
+                return (ptr);
+        }
         while (*ptr) {
                 size_t free_space;
                 uint16_t len;

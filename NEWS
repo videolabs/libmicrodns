@@ -1,3 +1,11 @@
+libmicrodns 0.0.4
+ * Fix heap buffer overflow
+ * Add support for multiple interfaces
+ * Fix various memory leaks
+ * Fix various potential crashes
+ * Fix build for MSVC
+ * Fix incorrect wide strings handling
+
 libmicrodns 0.0.3
  * Fix build on Windows Vista+
 

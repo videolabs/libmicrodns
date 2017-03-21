@@ -136,7 +136,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
 static size_t
 mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
 {
-        *pp_intfs = malloc(sizeof(*intfs));
+        *pp_intfs = malloc(sizeof(**pp_intfs));
         if (*pp_intfs == NULL)
                 return (0);
         **pp_intfs = NULL;

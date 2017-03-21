@@ -226,7 +226,7 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry
         union rr_data *data = &entry->data;
         const size_t len = sizeof(struct in6_addr);
 
-        if (*n < len)
+        if (*n < len || entry->data_len < len)
                 return (NULL);
 
         memcpy(&data->AAAA.addr, ptr, len);

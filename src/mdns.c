@@ -440,7 +440,7 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
                 entry = calloc(1, sizeof(struct rr_entry));
                 if (!entry)
                         goto err;
-                ptr = rr_read(ptr, &n, buf, entry, (hdr->flags & FLAG_QR) > 0);
+                ptr = rr_read(ptr, &n, buf, entry, i >= hdr->num_qn);
                 if (!ptr) {
                         free(entry);
                         errno = ENOSPC;

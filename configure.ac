@@ -245,6 +245,17 @@ AC_LINK_IFELSE([
 
 LIBS=${LIBS_SAVE}
 
+dnl Check for struct pollfd
+AC_CHECK_TYPES([struct pollfd],,,
+[#include <sys/types.h>
+#if HAVE_POLL
+# include <poll.h>
+#elif defined (_WIN32)
+# include <winsock2.h>
+#endif
+])
+
+
 AC_CHECK_MEMBER([struct ifaddrs.ifa_addr],[
     AC_DEFINE([HAVE_IFADDRS],[1],[Define to 1 if you have ifaddrs.ifa_addr function])],
     [],[[#include <ifaddrs.h>]])

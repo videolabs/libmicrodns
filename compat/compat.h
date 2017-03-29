@@ -108,7 +108,7 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #endif // _WIN32
 
-#ifndef HAVE_POLL
+#ifndef HAVE_STRUCT_POLLFD
 enum
 {
     POLLERR=0x1,
@@ -127,6 +127,9 @@ struct pollfd
     unsigned events;
     unsigned revents;
 };
+#endif
+
+#ifndef HAVE_POLL
 int poll(struct pollfd *fds, unsigned nfds, int timeout);
 #endif
 

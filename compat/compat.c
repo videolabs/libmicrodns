@@ -97,7 +97,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         if (wbuff == NULL)
                             return (-1);
                         errno = WSAGetLastError();
-                        DWORD nbChar = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+                        DWORD nbChar = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
                                            NULL, errno, 0, wbuff, buflen, NULL);
                         if (!nbChar)
                                 snprintf(buf, buflen, "Error %d\n", errno);

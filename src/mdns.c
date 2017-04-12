@@ -48,17 +48,6 @@ struct mdns_svc {
         struct mdns_svc *next;
 };
 
-#ifndef _WIN32
-# if HAVE_IFADDRS
-#include <ifaddrs.h>
-typedef struct sockaddr_storage multicast_if;
-# else
-typedef void* multicast_if;
-# endif
-#else
-typedef DWORD multicast_if;
-#endif
-
 struct mdns_conn {
         sock_t sock;
         // Since windows doesn't use a regular sockaddr struct, we have to keep
@@ -309,7 +298,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 #endif /* _WIN32 */
 
-            if (os_mcast_join(ctx->conns[i].sock, &ctx->addr) < 0)
+            if (os_mcast_join(ctx->conns[i].sock, &ctx->addr, ctx->conns[i].if_addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                            ctx->conns[i].family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,

@@ -135,9 +135,10 @@ os_strerror(int errnum, char *buf, size_t buflen)
 }
 
 int
-os_mcast_join(sock_t s, const struct sockaddr_storage *ss)
+os_mcast_join(sock_t s, const struct sockaddr_storage *ss, multicast_if mintf)
 {
 #ifdef MCAST_JOIN_GROUP
+        (void)mintf;
         struct group_req mgroup;
 
         memset(&mgroup, 0, sizeof(mgroup));
@@ -157,8 +158,8 @@ os_mcast_join(sock_t s, const struct sockaddr_storage *ss)
                 case AF_INET: {
                         struct ip_mreq mreq;
 
-                        memset(&mreq, 0, sizeof(mreq));
                         memcpy(&mreq.imr_multiaddr.s_addr, &u.sin.sin_addr, sizeof(struct in_addr));
+                        memcpy(&mreq.imr_interface, &mintf, sizeof(mintf));
                         if (setsockopt(s, ss_level(ss), IP_ADD_MEMBERSHIP,
                             (const void *) &mreq, sizeof(mreq)) < 0)
                                 return (-1);
@@ -167,8 +168,8 @@ os_mcast_join(sock_t s, const struct sockaddr_storage *ss)
                 case AF_INET6: {
                         struct ipv6_mreq mreq6;
 
-                        memset(&mreq6, 0, sizeof(mreq6));
                         memcpy(&mreq6.ipv6mr_multiaddr, &u.sin6.sin6_addr, sizeof(struct in6_addr));
+                        memcpy(&mreq6.ipv6mr_interface, &mintf, sizeof(mintf));
                         if (setsockopt(s, ss_level(ss), IPV6_JOIN_GROUP,
                             (const void *) &mreq6, sizeof(mreq6)) < 0)
                                 return (-1);

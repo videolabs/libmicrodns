@@ -611,7 +611,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
         int r;
         struct mdns_svc *svc;
         struct mdns_hdr qhdr = {0};
-        struct rr_entry *question;
+        struct rr_entry *question = NULL;
 
         for (size_t i = 0; i < ctx->nb_conns; ++i) {
                 if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
@@ -646,6 +646,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                 }
 again:
                 mdns_free(question);
+                question = NULL;
         }
         return (0);
 }

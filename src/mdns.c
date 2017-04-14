@@ -182,8 +182,12 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
                         continue;
                 ++nb_intf;
         }
-        if (nb_intf == 0)
-                return (0);
+        if (nb_intf == 0) {
+                *pp_intfs = malloc(sizeof(*intfs));
+                // Fallback to the default interface
+                **pp_intfs = 0;
+                return (1);
+        }
 
         *pp_intfs = intfs = malloc(nb_intf * sizeof(*intfs));
         if (intfs == NULL) {

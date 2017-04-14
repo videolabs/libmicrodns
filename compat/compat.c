@@ -93,7 +93,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
 #if defined (_WIN32)
                 case USE_FMTMSG_:
                 {
-                        wchar_t* wbuff = malloc(sizeof((*wbuff) * buflen));
+                        wchar_t* wbuff = malloc(sizeof(*wbuff) * buflen);
                         if (wbuff == NULL)
                             return (-1);
                         errno = WSAGetLastError();

@@ -541,7 +541,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
         for (t1 = t2 = time(NULL); stop(p_cookie) == false; t2 = time(NULL)) {
                 struct mdns_hdr ahdr = {0};
                 struct rr_entry *entries;
-                struct pollfd pfd[ctx->nb_conns];
+                struct pollfd *pfd = alloca( sizeof(*pfd) * ctx->nb_conns );
 
                 for (size_t i = 0; i < ctx->nb_conns; ++i) {
                         pfd[i].fd = ctx->conns[i].sock;
@@ -623,7 +623,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
         }
 
         for (; stop(p_cookie) == false;) {
-                struct pollfd pfd[ctx->nb_conns];
+                struct pollfd *pfd = alloca( sizeof(*pfd) * ctx->nb_conns );
 
                 for (size_t i = 0; i < ctx->nb_conns; ++i) {
                         pfd[i].fd = ctx->conns[i].sock;

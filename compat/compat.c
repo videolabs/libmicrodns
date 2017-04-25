@@ -100,11 +100,14 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         DWORD nbChar = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
                                            NULL, errno, 0, wbuff, buflen, NULL);
                         if (!nbChar)
+                        {
                                 snprintf(buf, buflen, "Error %d\n", errno);
-                        nbChar = WideCharToMultiByte(CP_UTF8, 0, wbuff, nbChar, buf, buflen, NULL, NULL);
+                                r = -1;
+                        }
+                        else
+                                nbChar = WideCharToMultiByte(CP_UTF8, 0, wbuff, nbChar,
+                                           buf, buflen, NULL, NULL);
                         free(wbuff);
-                        if (nbChar == 0)
-                                return (-1);
                         break;
                 }
 #endif

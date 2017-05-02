@@ -1,4 +1,13 @@
 -----------------
+libmicrodns 0.0.6
+-----------------
+ * Fix an interface selection issue on windows
+ * Fix invalid calls to free()
+ * Fix invalid allocation on windows
+ * Fix multi-interfaces fallback
+ * Fix MSVC build
+
+-----------------
 libmicrodns 0.0.5
 -----------------
  * Fix UWP build

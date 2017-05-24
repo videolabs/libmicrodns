@@ -1,6 +1,6 @@
 m4_define([MDNS_MAJOR], [0])
 m4_define([MDNS_MINOR], [0])
-m4_define([MDNS_MICRO], [6])
+m4_define([MDNS_MICRO], [7])
 
 AC_COPYRIGHT([Copyright 2014-2017 VideoLabs])
 

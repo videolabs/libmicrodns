@@ -20,9 +20,9 @@
 #define MICRODNS_COMPAT_H
 
 enum {
-        USE_STRERROR_ = -1,
-        USE_GAIERROR_ = -2,
-        USE_FMTMSG_ = -3,
+        MDNS_STDERR = -1, // standard error
+        MDNS_NETERR = -2, // network error
+        MDNS_LKPERR = -3, // lookup error
 };
 
 /*
@@ -41,12 +41,6 @@ enum {
 # include <poll.h>
 
 extern struct timeval os_deadline;
-
-enum {
-        MDNS_STDERR = USE_STRERROR_, // standard error
-        MDNS_NETERR = USE_STRERROR_, // network error
-        MDNS_LKPERR = USE_GAIERROR_, // lookup error
-};
 
 typedef int sock_t;
 # define INVALID_SOCKET -1
@@ -76,12 +70,6 @@ static inline int os_wouldblock(void) {return (errno == EWOULDBLOCK);}
 # endif // !AI_NUMERICSERV
 
 extern uint32_t os_deadline;
-
-enum {
-        MDNS_STDERR = USE_STRERROR_, // standard error
-        MDNS_NETERR = USE_FMTMSG_,   // network error
-        MDNS_LKPERR = USE_FMTMSG_,   // lookup error
-};
 
 typedef SOCKET sock_t;
 typedef int socklen_t;

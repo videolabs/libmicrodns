@@ -91,12 +91,14 @@ os_strerror(int errnum, char *buf, size_t buflen)
 
         switch (errnum) {
 #if defined (_WIN32)
-                case USE_FMTMSG_:
+                case MDNS_NETERR:
+                        errno = WSAGetLastError();
+                        // fallthrough
+                case MDNS_STDERR:
                 {
                         wchar_t* wbuff = malloc(sizeof(*wbuff) * buflen);
                         if (wbuff == NULL)
                             return (-1);
-                        errno = WSAGetLastError();
                         DWORD nbChar = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
                                            NULL, errno, 0, wbuff, buflen, NULL);
                         if (!nbChar)
@@ -110,29 +112,30 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         free(wbuff);
                         break;
                 }
-#endif
-                case USE_STRERROR_:
+                case MDNS_LKPERR:
+                {
+                        // Win32 gai_strerror returns a static buffer, but as a non-const char*
+                        TCHAR *s = gai_strerror(errno);
+                        if (!WideCharToMultiByte(CP_UTF8, 0, s, -1, buf, buflen, NULL, NULL))
+                                return (-1);
+                }
+#else
+                case MDNS_STDERR:
+                case MDNS_NETERR:
                         if (strerror_r(errno, buf, buflen) != 0)
                                 return (-1);
                         break;
-                case USE_GAIERROR_: {
-#ifndef _WIN32
+
+                case MDNS_LKPERR: {
                         const char *s;
                         s = gai_strerror(errno);
                         if ( s == NULL )
                             return (-1);
                         strncpy(buf, s, buflen);
                         buf[buflen - 1] = '\0';
-#else
-                        // Win32 gai_strerror returns a static buffer, but as a non-const char*
-                        TCHAR *s = gai_strerror(errno);
-                        if (!WideCharToMultiByte(CP_UTF8, 0, s, -1, buf, buflen, NULL, NULL))
-                                return (-1);
-#endif
-
-
                         break;
                 }
+#endif
                 default:
                         r = -1;
         }

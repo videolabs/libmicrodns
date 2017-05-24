@@ -119,6 +119,8 @@ os_strerror(int errnum, char *buf, size_t buflen)
 #ifndef _WIN32
                         const char *s;
                         s = gai_strerror(errno);
+                        if ( s == NULL )
+                            return (-1);
                         strncpy(buf, s, buflen);
                         buf[buflen - 1] = '\0';
 #else

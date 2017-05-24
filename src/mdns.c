@@ -252,6 +252,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
         const uint32_t on_off = 1;
         const uint32_t ttl = 255;
         const uint8_t loop = 1;
+        int res;
 #ifdef _WIN32
         union {
                 struct sockaddr_storage ss;
@@ -275,8 +276,9 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
         errno = os_init("2.2");
         if (errno != 0)
                 return mdns_destroy(ctx), (MDNS_NETERR);
-        if (mdns_resolve(ctx, addr, port) < 0)
-                return mdns_destroy(ctx), (MDNS_LKPERR);
+        res = mdns_resolve(ctx, addr, port);
+        if (res < 0)
+                return mdns_destroy(ctx), (res);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i ) {
                 if ((ctx->conns[i].sock = socket(ctx->conns[i].family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)

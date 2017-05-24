@@ -227,14 +227,14 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         ctx->nb_conns = mdns_list_interfaces(&ifaddrs, res->ai_family);
         if (ctx->nb_conns == 0) {
                 freeaddrinfo(res);
-                return (MDNS_LKPERR);
+                return (MDNS_NETERR);
         }
         memcpy(&ctx->addr, res->ai_addr, res->ai_addrlen);
         ctx->conns = malloc(ctx->nb_conns * sizeof(*ctx->conns));
         if (ctx->conns == NULL) {
                 free(ifaddrs);
                 freeaddrinfo(res);
-                return (MDNS_LKPERR);
+                return (MDNS_NETERR);
         }
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;

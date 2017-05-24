@@ -64,7 +64,7 @@ struct mdns_ctx {
 };
 
 static int mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port);
-static ssize_t mdns_write_hdr(uint8_t *, const struct mdns_hdr *);
+static size_t mdns_write_hdr(uint8_t *, const struct mdns_hdr *);
 static int strrcmp(const char *, const char *);
 
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *, int8_t ans);
@@ -359,7 +359,7 @@ mdns_destroy(struct mdns_ctx *ctx)
         return (0);
 }
 
-static ssize_t
+static size_t
 mdns_write_hdr(uint8_t *ptr, const struct mdns_hdr *hdr)
 {
         uint8_t *p = ptr;
@@ -382,9 +382,7 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
 
         if (!entries) return (MDNS_ERROR);
 
-        if ((l = mdns_write_hdr(buf, hdr)) < 0) {
-                return (MDNS_STDERR);
-        }
+        l = mdns_write_hdr(buf, hdr);
         n += l;
 
         for (entry = entries; entry; entry = entry->next) {

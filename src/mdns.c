@@ -88,16 +88,17 @@ mdns_is_interface_valuable(struct ifaddrs* ifa)
                 ifa->ifa_addr->sa_family == AF_INET);
 }
 
-static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+static int
+mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
 {
         struct ifaddrs *ifs;
         struct ifaddrs *c;
         size_t nb_if;
         multicast_if* intfs;
 
+        *p_nb_intf = 0;
         if (getifaddrs(&ifs) || ifs == NULL)
-                return (0);
+                return (MDNS_NETERR);
         nb_if = 0;
         for (c = ifs; c != NULL; c = c->ifa_next) {
                 if (c->ifa_addr->sa_family != ai_family || !mdns_is_interface_valuable(c))
@@ -106,12 +107,12 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
         }
         if (nb_if == 0) {
                 freeifaddrs(ifs);
-                return (0);
+                return (MDNS_ERROR);
         }
         *pp_intfs = intfs = malloc(sizeof(*intfs) * nb_if);
         if (intfs == NULL) {
                 freeifaddrs(ifs);
-                return (0);
+                return (MDNS_ERROR);
         }
         for (c = ifs; c != NULL; c = c->ifa_next) {
                 if (c->ifa_addr->sa_family != ai_family || !mdns_is_interface_valuable(c))
@@ -120,17 +121,19 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
                 intfs++;
         }
         freeifaddrs(ifs);
-        return (nb_if);
+        *p_nb_intf = nb_if;
+        return (0);
 }
 #else
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
 {
         *pp_intfs = malloc(sizeof(**pp_intfs));
         if (*pp_intfs == NULL)
-                return (0);
+                return (MDNS_ERROR);
         **pp_intfs = NULL;
-        return 1;
+        *p_nb_intf = 1;
+        return (0);
 }
 #endif // HAVE_IFADDRS
 
@@ -144,7 +147,7 @@ mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf)
 }
 
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
+mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
 {
         multicast_if* intfs;
         IP_ADAPTER_ADDRESSES *res = NULL, *current;
@@ -152,6 +155,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
         HRESULT hr;
         size_t nb_intf = 0;
 
+        *p_nb_intf = 0;
         /**
          * https://msdn.microsoft.com/en-us/library/aa365915.aspx
          *
@@ -167,14 +171,14 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
                 free(res);
                 res = malloc( size );
                 if (res == NULL)
-                        return (0);
+                        return (MDNS_ERROR);
                 hr = GetAdaptersAddresses(ai_family, GAA_FLAG_SKIP_UNICAST |
                                                     GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER,
                                                     NULL, res, &size);
         } while (hr == ERROR_BUFFER_OVERFLOW);
         if (hr != NO_ERROR) {
                 free(res);
-                return (0);
+                return (MDNS_NETERR);
         }
 
         for (current = res; current != NULL; current = current->Next) {
@@ -186,13 +190,14 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
                 *pp_intfs = malloc(sizeof(*intfs));
                 // Fallback to the default interface
                 **pp_intfs = 0;
-                return (1);
+                *p_nb_intf = 1;
+                return (0);
         }
 
         *pp_intfs = intfs = malloc(nb_intf * sizeof(*intfs));
         if (intfs == NULL) {
                 free(res);
-                return (0);
+                return (MDNS_ERROR);
         }
         for (current = res; current != NULL; current = current->Next) {
                 if (!mdns_is_interface_valuable(current))
@@ -203,7 +208,8 @@ mdns_list_interfaces(multicast_if** pp_intfs, int ai_family)
                         *intfs = htonl(current->IfIndex);
                 ++intfs;
         }
-        return (nb_intf);
+        *p_nb_intf = nb_intf;
+        return (0);
 }
 #endif
 
@@ -214,6 +220,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         struct addrinfo hints, *res = NULL;
         multicast_if* ifaddrs = NULL;
         size_t i;
+        int status;
 
         sprintf(buf, "%hu", port);
         memset(&hints, 0, sizeof(hints));
@@ -224,7 +231,9 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         if (errno != 0)
                 return (MDNS_LKPERR);
 
-        ctx->nb_conns = mdns_list_interfaces(&ifaddrs, res->ai_family);
+        status = mdns_list_interfaces(&ifaddrs, &ctx->nb_conns, res->ai_family);
+        if ( status < 0)
+            return (status);
         if (ctx->nb_conns == 0) {
                 freeaddrinfo(res);
                 return (MDNS_NETERR);

@@ -1,4 +1,9 @@
 -----------------
+libmicrodns 0.0.7
+-----------------
+ * Various error handling fixes
+
+-----------------
 libmicrodns 0.0.6
 -----------------
  * Fix an interface selection issue on windows

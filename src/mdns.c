@@ -234,7 +234,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         if (ctx->conns == NULL) {
                 free(ifaddrs);
                 freeaddrinfo(res);
-                return (MDNS_NETERR);
+                return (MDNS_ERROR);
         }
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;
@@ -263,12 +263,12 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
         struct mdns_ctx *ctx;
 
         if (p_ctx == NULL)
-            return (MDNS_STDERR);
+            return (MDNS_ERROR);
         *p_ctx = NULL;
 
         ctx = malloc(sizeof(struct mdns_ctx));
         if (ctx == NULL)
-            return (MDNS_STDERR);
+            return (MDNS_ERROR);
 
         ctx->services = NULL;
         ctx->conns = NULL;
@@ -380,7 +380,7 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
         const struct rr_entry *entry = entries;
         ssize_t n = 0, l, r;
 
-        if (!entries) return (MDNS_STDERR);
+        if (!entries) return (MDNS_ERROR);
 
         if ((l = mdns_write_hdr(buf, hdr)) < 0) {
                 return (MDNS_STDERR);
@@ -463,13 +463,13 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
                 *entries = entry;
         }
         if (*entries == NULL) {
-                return (MDNS_STDERR);
+                return (MDNS_ERROR);
         }
         return (0);
 err:
         mdns_free(*entries);
         *entries = NULL;
-        return (MDNS_STDERR);
+        return (MDNS_ERROR);
 }
 
 void
@@ -511,13 +511,13 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
             mdns_stop_func stop, mdns_callback callback, void *p_cookie)
 {
         if (ctx->nb_conns == 0)
-                return (MDNS_NETERR);
+                return (MDNS_ERROR);
         int r;
         time_t t1, t2;
         struct mdns_hdr hdr = {0};
         struct rr_entry *qns = malloc(nb_names * sizeof(struct rr_entry));
         if (qns == NULL)
-            return (MDNS_STDERR);
+            return (MDNS_ERROR);
         memset(qns, 0, nb_names * sizeof(struct rr_entry));
 
         hdr.num_qn = nb_names;
@@ -595,11 +595,11 @@ mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
         mdns_callback callback, void *p_cookie)
 {
         if (!callback)
-                return (MDNS_STDERR);
+                return (MDNS_ERROR);
 
         struct mdns_svc *svc = (struct mdns_svc *) calloc(1, sizeof(struct mdns_svc));
         if (!svc)
-                return (MDNS_STDERR);
+                return (MDNS_ERROR);
 
         svc->name = strdup(service);
         svc->type = type;

@@ -23,6 +23,7 @@ enum {
         MDNS_STDERR = -1, // standard error
         MDNS_NETERR = -2, // network error
         MDNS_LKPERR = -3, // lookup error
+        MDNS_ERROR  = -4, // any runtime error that's not originating from the standard library
 };
 
 /*

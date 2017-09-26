@@ -232,8 +232,10 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 return (MDNS_LKPERR);
 
         status = mdns_list_interfaces(&ifaddrs, &ctx->nb_conns, res->ai_family);
-        if ( status < 0)
-            return (status);
+        if ( status < 0) {
+                freeaddrinfo(res);
+                return (status);
+        }
         if (ctx->nb_conns == 0) {
                 freeaddrinfo(res);
                 return (MDNS_NETERR);

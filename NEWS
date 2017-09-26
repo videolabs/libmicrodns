@@ -1,4 +1,11 @@
 -----------------
+libmicrodns 0.0.8
+-----------------
+ * Fix stack overflow on network errors
+ * Fix leak on errors
+ * Avoid infinite loops on network errors
+
+-----------------
 libmicrodns 0.0.7
 -----------------
  * Various error handling fixes

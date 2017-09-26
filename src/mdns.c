@@ -601,7 +601,6 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                 if (difftime(t2, t1) >= (double) interval) {
                         if ((r = mdns_entries_send(ctx, &hdr, qns)) < 0) {
                                 callback(p_cookie, r, NULL);
-                                continue;
                         }
                         t1 = t2;
                 }

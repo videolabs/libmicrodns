@@ -101,7 +101,9 @@ mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
                 return (MDNS_NETERR);
         nb_if = 0;
         for (c = ifs; c != NULL; c = c->ifa_next) {
-                if (c->ifa_addr->sa_family != ai_family || !mdns_is_interface_valuable(c))
+                if (c->ifa_addr == NULL ||
+                    c->ifa_addr->sa_family != ai_family ||
+                    !mdns_is_interface_valuable(c))
                         continue;
                 nb_if++;
         }

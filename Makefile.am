@@ -5,7 +5,7 @@ AM_CPPFLAGS = -I. -I$(top_srcdir)/src -I$(top_srcdir)/compat -I$(top_builddir)/s
 lib_LTLIBRARIES = libmicrodns.la
 noinst_LTLIBRARIES = libcompat.la
 
-libcompat_la_SOURCES = compat/compat.c compat/compat.h
+libcompat_la_SOURCES = compat/compat.c compat/compat.h compat/inet.c compat/poll.c
 
 libmicrodns_la_SOURCES = \
 	src/mdns.c \

@@ -220,10 +220,11 @@ LIBS_SAVE=${LIBS}
 LIBS="${LIBS} ${LIBSOCKET}"
 AC_LINK_IFELSE([
     AC_LANG_PROGRAM([#ifdef _WIN32
+        #include <ws2tcpip.h>
+        #include <windows.h>
         # if _WIN32_WINNT < 0x600
         #  error Needs vista+
         # endif
-        #include <ws2tcpip.h>
         #else
         #include <sys/socket.h>
         #include <arpa/inet.h>
@@ -233,10 +234,11 @@ AC_LINK_IFELSE([
 AC_LINK_IFELSE([
     AC_LANG_PROGRAM([#include <stddef.h>
         #ifdef _WIN32
+        #include <winsock2.h>
+        #include <windows.h>
         # if _WIN32_WINNT < 0x600
         #  error Needs vista+
         # endif
-        #include <winsock2.h>
         #else
         #include <poll.h>
         #endif], [

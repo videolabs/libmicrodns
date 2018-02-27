@@ -1,4 +1,10 @@
 -----------------
+libmicrodns 0.0.9
+-----------------
+ * Fix a crash with interfaces without an IP address
+ * Fixes for building with llvm-mingw
+
+-----------------
 libmicrodns 0.0.8
 -----------------
  * Fix stack overflow on network errors

@@ -1,8 +1,8 @@
 m4_define([MDNS_MAJOR], [0])
 m4_define([MDNS_MINOR], [0])
-m4_define([MDNS_MICRO], [8])
+m4_define([MDNS_MICRO], [9])
 
-AC_COPYRIGHT([Copyright 2014-2017 VideoLabs])
+AC_COPYRIGHT([Copyright 2014-2018 VideoLabs])
 
 AC_INIT([microDNS], [MDNS_MAJOR.MDNS_MINOR.MDNS_MICRO])
 AC_CONFIG_HEADERS([config.h])

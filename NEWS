@@ -1,4 +1,9 @@
 -----------------
+libmicrodns 0.0.10
+-----------------
+ * Fix another crash with interfaces without an IP address
+
+-----------------
 libmicrodns 0.0.9
 -----------------
  * Fix a crash with interfaces without an IP address

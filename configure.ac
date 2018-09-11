@@ -258,9 +258,8 @@ AC_CHECK_TYPES([struct pollfd],,,
 ])
 
 
-AC_CHECK_MEMBER([struct ifaddrs.ifa_addr],[
-    AC_DEFINE([HAVE_IFADDRS],[1],[Define to 1 if you have ifaddrs.ifa_addr function])],
-    [],[[#include <ifaddrs.h>]])
+AC_CHECK_FUNC([getifaddrs], [
+	      AC_DEFINE([HAVE_IFADDRS], [1], [Define to 1 if you have getifaddrs function.])])
 
 
 AC_SUBST([LIBSOCKET])

@@ -73,7 +73,7 @@ extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 
 #ifndef _WIN32
-#if HAVE_IFADDRS
+#if HAVE_GETIFADDRS
 
 static bool
 mdns_is_interface_valuable(struct ifaddrs* ifa)
@@ -139,7 +139,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
         *p_nb_intf = 1;
         return (0);
 }
-#endif // HAVE_IFADDRS
+#endif // HAVE_GETIFADDRS
 
 #else // _WIN32
 
@@ -332,7 +332,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
-#if defined(HAVE_IFADDRS) || defined(_WIN32)
+#if defined(HAVE_GETIFADDRS) || defined(_WIN32)
             if (setsockopt(ctx->conns[i].sock,
                            ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                            ctx->conns[i].family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,

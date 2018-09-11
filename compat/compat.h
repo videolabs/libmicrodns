@@ -99,7 +99,7 @@ typedef DWORD multicast_if;
 
 #else
 
-# if HAVE_IFADDRS
+# if HAVE_IFADDRS_H
 #include <ifaddrs.h>
 typedef struct sockaddr_storage multicast_if;
 # else

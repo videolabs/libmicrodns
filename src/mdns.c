@@ -132,10 +132,11 @@ mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
 static size_t
 mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
 {
-        *pp_intfs = malloc(sizeof(**pp_intfs));
-        if (*pp_intfs == NULL)
+        multicast_if *intfs;
+        *pp_intfs = intfs = malloc(sizeof(*intfs));
+        if (intfs == NULL)
                 return (MDNS_ERROR);
-        **pp_intfs = NULL;
+        memset(intfs, 0, sizeof(*intfs));
         *p_nb_intf = 1;
         return (0);
 }

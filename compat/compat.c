@@ -36,6 +36,7 @@ struct timeval os_deadline = {
 
 #if defined (_WIN32)
 uint32_t os_deadline = 1000;
+#include <winapifamily.h>
 #endif // _WIN32
 
 int
@@ -70,6 +71,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         free(wbuff);
                         break;
                 }
+#if WINAPI_FAMILY_PARTITION (WINAPI_PARTITION_DESKTOP) || _WIN32_WINNT >= 0x0A00
                 case MDNS_LKPERR:
                 {
                         // Win32 gai_strerror returns a static buffer, but as a non-const char*
@@ -77,6 +79,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         if (!WideCharToMultiByte(CP_UTF8, 0, s, -1, buf, buflen, NULL, NULL))
                                 return (-1);
                 }
+#endif
 #else
                 case MDNS_STDERR:
                 case MDNS_NETERR:

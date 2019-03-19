@@ -73,7 +73,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
                 case MDNS_LKPERR:
                 {
                         // Win32 gai_strerror returns a static buffer, but as a non-const char*
-                        TCHAR *s = gai_strerror(errno);
+                        WCHAR *s = gai_strerror(errno);
                         if (!WideCharToMultiByte(CP_UTF8, 0, s, -1, buf, buflen, NULL, NULL))
                                 return (-1);
                 }

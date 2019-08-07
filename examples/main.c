@@ -28,7 +28,8 @@ static void sighandler(int signum)
 {
         char s[] = "SIGINT received, exiting ...\n";
 
-        write(fileno(stdout), s, sizeof(s));
+        ssize_t result = write(fileno(stdout), s, sizeof(s));
+        (void)result;
         sigflag = 1;
 }
 

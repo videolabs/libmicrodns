@@ -23,20 +23,21 @@
 
 volatile sig_atomic_t sigflag = 0;
 
-void sighandler(int signum)
+static void sighandler(int signum)
 {
         char s[] = "SIGINT received, exiting ...\n";
 
-        write(fileno(stdout), s, sizeof(s));
+        ssize_t result = write(fileno(stdout), s, sizeof(s));
+        (void)result;
         sigflag = 1;
 }
 
-bool stop(void *cbarg)
+static bool stop(void *cbarg)
 {
         return (sigflag ? true : false);
 }
 
-void callback(void *cbarg, int r, const struct rr_entry *entry)
+static void callback(void *cbarg, int r, const struct rr_entry *entry)
 {
         struct mdns_ctx *ctx = (struct mdns_ctx *) cbarg;
         struct mdns_hdr hdr = {0};

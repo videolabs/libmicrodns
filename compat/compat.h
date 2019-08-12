@@ -108,7 +108,7 @@ typedef void* multicast_if;
 
 #endif // _WIN32
 
-#ifndef HAVE_STRUCT_POLLFD
+#if !defined(HAVE_STRUCT_POLLFD) && !defined(_SYS_POLL_H)
 enum
 {
     POLLERR=0x1,
@@ -129,7 +129,7 @@ struct pollfd
 };
 #endif
 
-#ifndef HAVE_POLL
+#if !defined(HAVE_POLL) && !defined(_SYS_POLL_H)
 int poll(struct pollfd *fds, unsigned nfds, int timeout);
 #endif
 

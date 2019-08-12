@@ -207,10 +207,18 @@ mdns_list_interfaces(multicast_if** pp_intfs, size_t* p_nb_intf, int ai_family)
         for (current = res; current != NULL; current = current->Next) {
                 if (!mdns_is_interface_valuable(current))
                         continue;
-                if (ai_family == AF_INET6)
-                        *intfs = htonl(current->Ipv6IfIndex);
-                else
+                if (ai_family == AF_INET6) {
+                        // For IPv6, The input value for setting IPV6_MULTICAST_IF is the
+                        // interface index of the desired outgoing interface in *host byte order*.
+                        // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ipv6-socket-options
+                        *intfs = current->Ipv6IfIndex;
+                }
+                else {
+                        // For IPv4, The input value for setting IP_MULTICAST_IF is the
+                        // interface index of the desired outgoing interface in *network byte order*.
+                        // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
                         *intfs = htonl(current->IfIndex);
+                }
                 ++intfs;
         }
         *p_nb_intf = nb_intf;

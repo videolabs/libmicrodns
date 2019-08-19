@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #include "microdns.h"
 #include "compat.h"
@@ -52,8 +53,7 @@ static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const st
         answer.rr_class = entry->rr_class;
         answer.ttl      = 120;
 
-        sprintf(answer.data.A.addr_str, "192.168.1.1");
-        inet_pton(AF_INET, answer.data.A.addr_str, &answer.data.A.addr);
+        memcpy(&answer.data.A.addr, &mdns_ip->ipv4, sizeof(answer.data.A.addr));
         mdns_entries_send(ctx, &hdr, &answer);
 }
 

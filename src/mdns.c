@@ -54,10 +54,8 @@ struct mdns_svc {
 
 struct mdns_conn {
         sock_t sock;
-        // Since windows doesn't use a regular sockaddr struct, we have to keep
-        // track of the protocol family
-        unsigned int family;
-        multicast_if if_addr;
+        multicast_if if_addr;  // NB: In Windows this is the interface index
+        struct mdns_ip mdns_ip;  // IP address and family of the interface
 };
 
 struct mdns_ctx {
@@ -259,7 +257,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;
                 ctx->conns[i].if_addr = ifaddrs[i];
-                ctx->conns[i].family = res->ai_family;
+                ctx->conns[i].mdns_ip.family = res->ai_family;
         }
         free(ifaddrs);
         freeaddrinfo(res);
@@ -301,7 +299,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                 return mdns_destroy(ctx), (res);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i ) {
-                if ((ctx->conns[i].sock = socket(ctx->conns[i].family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+                if ((ctx->conns[i].sock = socket(ctx->conns[i].mdns_ip.family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                         return mdns_destroy(ctx), (MDNS_NETERR);
                 if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
                         return mdns_destroy(ctx), (MDNS_NETERR);
@@ -326,21 +324,21 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
             if (os_mcast_join(ctx->conns[i].sock, &ctx->addr, ctx->conns[i].if_addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
-            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
-                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].mdns_ip.family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].mdns_ip.family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
                            (const void *) &ttl, sizeof(ttl)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
-            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].mdns_ip.family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                            IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
 #if defined(HAVE_GETIFADDRS) || defined(_WIN32)
             if (setsockopt(ctx->conns[i].sock,
-                           ctx->conns[i].family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
-                           ctx->conns[i].family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
+                           ctx->conns[i].mdns_ip.family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ctx->conns[i].mdns_ip.family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
                            (const void*)&ctx->conns[i].if_addr, sizeof(ctx->conns[i].if_addr))) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }

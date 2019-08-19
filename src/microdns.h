@@ -72,7 +72,20 @@ struct mdns_hdr {
         uint16_t num_add_rr;
 };
 
-typedef void (*mdns_callback)(void*, int, const struct rr_entry *);
+struct mdns_ip {
+    unsigned int family;
+    union {
+        struct {
+            struct in_addr addr;
+        } ipv4;
+        struct {
+            struct in6_addr addr;
+        } ipv6;
+    };
+};
+
+typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
+typedef void (*mdns_announce_callback)(void*, int, const struct mdns_ip *, const struct rr_entry *);
 
 /**
  * \return true if the listener should be stopped
@@ -148,7 +161,7 @@ extern int mdns_strerror(int error, char *buf, size_t n);
 extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                        unsigned int nb_names, enum rr_type type,
                        unsigned int interval, mdns_stop_func stop,
-                       mdns_callback callback, void *p_cookie);
+                       mdns_listen_callback callback, void *p_cookie);
 
 /**
  * @brief Announce a new name to serve
@@ -162,7 +175,7 @@ extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
  * @return 0 if success, negative in other cases
  */
 extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
-        mdns_callback callback, void *p_cookie);
+        mdns_announce_callback callback, void *p_cookie);
 
 /**
  * @brief The main serving function for mDNS

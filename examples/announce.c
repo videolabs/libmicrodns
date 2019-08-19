@@ -37,7 +37,7 @@ static bool stop(void *cbarg)
         return (sigflag ? true : false);
 }
 
-static void callback(void *cbarg, int r, const struct rr_entry *entry)
+static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const struct rr_entry *entry)
 {
         struct mdns_ctx *ctx = (struct mdns_ctx *) cbarg;
         struct mdns_hdr hdr = {0};

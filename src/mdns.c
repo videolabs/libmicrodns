@@ -43,7 +43,11 @@
 struct mdns_svc {
         char *name;
         enum rr_type type;
-        mdns_callback callback;
+        union
+        {
+                mdns_announce_callback announce_callback;
+                //mdns_listen_callback listen_callback;  // currently unused
+        };
         void *p_cookie;
         struct mdns_svc *next;
 };
@@ -529,7 +533,7 @@ strrcmp(const char *s1, const char *s2)
 
 static int
 mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
-                          unsigned int nb_names, mdns_callback callback,
+                          unsigned int nb_names, mdns_listen_callback callback,
                           void *p_cookie)
 {
     struct mdns_hdr ahdr = {0};
@@ -578,7 +582,7 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
 int
 mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
             unsigned int nb_names, enum rr_type type, unsigned int interval,
-            mdns_stop_func stop, mdns_callback callback, void *p_cookie)
+            mdns_stop_func stop, mdns_listen_callback callback, void *p_cookie)
 {
         if (ctx->nb_conns == 0)
                 return (MDNS_ERROR);
@@ -625,7 +629,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
 
 int
 mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
-        mdns_callback callback, void *p_cookie)
+        mdns_announce_callback callback, void *p_cookie)
 {
         if (!callback)
                 return (MDNS_ERROR);
@@ -636,7 +640,7 @@ mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
 
         svc->name = strdup(service);
         svc->type = type;
-        svc->callback = callback;
+        svc->announce_callback = callback;
         svc->p_cookie = p_cookie;
         svc->next  = ctx->services;
 
@@ -678,7 +682,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
 
                         for (svc = ctx->services; svc; svc = svc->next) {
                                 if (!strrcmp(question->name, svc->name) && question->type == svc->type) {
-                                        svc->callback(svc->p_cookie, r, question);
+                                        svc->announce_callback(svc->p_cookie, r, NULL, question);
                                         goto again;
                                 }
                         }

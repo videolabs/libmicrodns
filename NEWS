@@ -1,4 +1,10 @@
 -----------------
+libmicrodns 0.1.0
+-----------------
+ * Fix incorrect IPv6 interface index on Windows
+ * Pass IPv4/IPv6 addresses to announce callbacks
+
+-----------------
 libmicrodns 0.0.10
 -----------------
  * Fix another crash with interfaces without an IP address

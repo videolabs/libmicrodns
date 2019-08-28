@@ -7,5 +7,4 @@ Name: microDNS
 Description: mDNS simple implementation
 Version: @VERSION@
 Libs: -L${libdir} -lmicrodns @LIBSOCKET@
-Libs.private: @LIBS@
 Cflags: -I${includedir}

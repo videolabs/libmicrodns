@@ -11,13 +11,6 @@ On our way to make it wayyy better :)
 
 Installation
 ------------
-    ./bootstrap
+    meson build && ninja -C build
 
-    mkdir build && cd build
-
-    ../configure
-
-    make
-
-    # make install
-
+    # ninja -C build install

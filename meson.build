@@ -146,7 +146,7 @@ libcompat_sources = [
     'compat/poll.c',
 ]
 
-incdirs = include_directories('src', 'compat')
+incdirs = include_directories('include', 'compat')
 
 libcompat = static_library('compat', libcompat_sources,
     include_directories: incdirs,
@@ -160,8 +160,8 @@ libmicrodns_sources = [
 ]
 
 libmicrodns_headers = [
-    'src/microdns.h',
-    'src/rr.h',
+    'include/microdns/microdns.h',
+    'include/microdns/rr.h',
 ]
 
 install_headers(libmicrodns_headers, subdir: 'microdns')

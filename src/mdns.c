@@ -80,13 +80,20 @@ extern void rr_free(struct rr_entry *);
 static bool
 mdns_is_interface_valuable(struct ifaddrs* ifa)
 {
-    return ifa->ifa_addr != NULL && (ifa->ifa_addr->sa_family == AF_INET ||
-                                     ifa->ifa_addr->sa_family == AF_INET6) &&
+    struct sockaddr_in6 saddr;
+
+    if (ifa->ifa_addr == NULL)
+      return false;
+
+    memcpy(&saddr, ifa->ifa_addr, sizeof(saddr));
+
+    return (ifa->ifa_addr->sa_family == AF_INET ||
+            ifa->ifa_addr->sa_family == AF_INET6) &&
             (ifa->ifa_flags & IFF_LOOPBACK) == 0 &&
             (ifa->ifa_flags & IFF_UP) != 0 &&
             (ifa->ifa_flags & IFF_RUNNING) != 0 &&
             ((ifa->ifa_addr->sa_family == AF_INET6 &&
-                    ((struct sockaddr_in6*)(ifa->ifa_addr))->sin6_scope_id == 0) ||
+                    saddr.sin6_scope_id == 0) ||
                 ifa->ifa_addr->sa_family == AF_INET);
 }
 
@@ -132,12 +139,16 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
                         continue;
                 memcpy(intfs, c->ifa_addr, sizeof(*intfs));
                 if (ai_family == AF_INET) {
-                        struct sockaddr_in *addr_in = (struct sockaddr_in *)c->ifa_addr;
-                        memcpy(&(*mdns_ips).ipv4.addr, &addr_in->sin_addr, sizeof(struct in_addr));
+                        struct sockaddr_in saddr;
+
+                        memcpy(&saddr, c->ifa_addr, sizeof(saddr));
+                        memcpy(&(*mdns_ips).ipv4.addr, &saddr.sin_addr, sizeof(struct in_addr));
                 }
                 else {
-                        struct sockaddr_in6 *addr_in = (struct sockaddr_in6 *)c->ifa_addr;
-                        memcpy(&(*mdns_ips).ipv6.addr, &addr_in->sin6_addr, sizeof(struct in6_addr));
+                        struct sockaddr_in6 saddr;
+
+                        memcpy(&saddr, c->ifa_addr, sizeof(saddr));
+                        memcpy(&(*mdns_ips).ipv6.addr, &saddr.sin6_addr, sizeof(struct in6_addr));
                 }
                 mdns_ips++;
                 intfs++;

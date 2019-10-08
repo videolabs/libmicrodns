@@ -32,9 +32,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "utils.h"
-#include "microdns.h"
-#include "rr.h"
+#include "microdns/utils.h"
+#include "microdns/microdns.h"
+#include "microdns/rr.h"
 
 typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);

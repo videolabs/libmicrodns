@@ -19,8 +19,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include "microdns.h"
-#include "compat.h"
+#include <microdns/microdns.h>
 
 volatile sig_atomic_t sigflag = 0;
 

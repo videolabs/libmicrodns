@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "compat.h"
-#include "utils.h"
+#include "microdns/utils.h"
 
 #ifndef HAVE_POLL
 int poll(struct pollfd *fds, unsigned nfds, int timeout)

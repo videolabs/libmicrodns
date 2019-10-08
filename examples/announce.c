@@ -46,7 +46,7 @@ static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const st
         }
         struct mdns_ctx *ctx = (struct mdns_ctx *) cbarg;
         struct mdns_hdr hdr = {0};
-        struct rr_entry answers[4] = {0}; // A/AAAA, SRV, TXT, PTR
+        struct rr_entry answers[4] = {{0}}; // A/AAAA, SRV, TXT, PTR
         hdr.flags |= FLAG_QR;
         hdr.flags |= FLAG_AA;
         hdr.num_ans_rr = sizeof(answers) / sizeof(answers[0]);

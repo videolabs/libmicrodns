@@ -40,6 +40,12 @@
 extern "C" {
 # endif
 
+#if defined(_MSC_VER)
+#define MDNS_EXPORT __declspec(dllexport) extern
+#else
+#define MDNS_EXPORT extern
+#endif
+
 struct mdns_ctx;
 
 #define MDNS_PORT        5353
@@ -103,7 +109,7 @@ typedef bool (*mdns_stop_func)(void*);
  *
  * @return 0 if success, negative in other cases
  */
-extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
+MDNS_EXPORT int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short port);
 
 /**
  * @brief Destroy an mdns context
@@ -112,7 +118,7 @@ extern int mdns_init(struct mdns_ctx **ctx, const char *addr, unsigned short por
  *
  * @return 0 if success, negative in other cases
  */
-extern int mdns_destroy(struct mdns_ctx *ctx);
+MDNS_EXPORT int mdns_destroy(struct mdns_ctx *ctx);
 
 
 /**
@@ -124,14 +130,14 @@ extern int mdns_destroy(struct mdns_ctx *ctx);
  *
  * @return 0 if successful, negative in other cases
  */
-extern int mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
+MDNS_EXPORT int mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries);
 
 /**
  * @brief Print in human form an entry to debug
  *
  * @param entry The entry one wants to debug
  */
-extern void mdns_entries_print(const struct rr_entry *);
+MDNS_EXPORT void mdns_entries_print(const struct rr_entry *);
 
 /**
  * @brief Wrapper around strerror to get strings from errors
@@ -142,7 +148,7 @@ extern void mdns_entries_print(const struct rr_entry *);
  *
  * @return 0 if success, negative in other cases
  */
-extern int mdns_strerror(int error, char *buf, size_t n);
+MDNS_EXPORT int mdns_strerror(int error, char *buf, size_t n);
 
 /**
  * @brief The main listening function for mDNS
@@ -158,7 +164,7 @@ extern int mdns_strerror(int error, char *buf, size_t n);
  *
  * @return 0 if success, negative in other cases
  */
-extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
+MDNS_EXPORT int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                        unsigned int nb_names, enum rr_type type,
                        unsigned int interval, mdns_stop_func stop,
                        mdns_listen_callback callback, void *p_cookie);
@@ -174,7 +180,7 @@ extern int mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
  *
  * @return 0 if success, negative in other cases
  */
-extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
+MDNS_EXPORT int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
         mdns_announce_callback callback, void *p_cookie);
 
 /**
@@ -188,7 +194,7 @@ extern int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type
  * @return 0 if success, negative in other cases
  */
 
-extern int mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie);
+MDNS_EXPORT int mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie);
 
 # ifdef __cplusplus
 }

@@ -78,6 +78,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
                         WCHAR *s = gai_strerror(errno);
                         if (!WideCharToMultiByte(CP_UTF8, 0, s, -1, buf, buflen, NULL, NULL))
                                 return (-1);
+                        break;
                 }
 #endif
 #else

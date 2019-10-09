@@ -19,6 +19,10 @@
 #ifndef MICRODNS_COMPAT_H
 #define MICRODNS_COMPAT_H
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 enum {
         MDNS_STDERR = -1, // standard error
         MDNS_NETERR = -2, // network error
@@ -131,6 +135,16 @@ struct pollfd
 
 #if !defined(HAVE_POLL) && !defined(_SYS_POLL_H)
 int poll(struct pollfd *fds, unsigned nfds, int timeout);
+#endif
+
+#if defined(_MSC_VER)
+#include <io.h>
+#include <basetsd.h>
+
+typedef SSIZE_T ssize_t;
+
+#define alloca(s) _alloca(s)
+#define write(f,b,c) _write(f,b,c)
 #endif
 
 extern int os_strerror(int, char *, size_t);

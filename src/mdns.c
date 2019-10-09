@@ -236,7 +236,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
                         return (MDNS_ERROR);
                 }
                 **pp_intfs = 0;
-                *pp_mdns_ips = malloc(sizeof(*mdns_ips));
+                *pp_mdns_ips = mdns_ips = malloc(sizeof(*mdns_ips));
                 if (*pp_mdns_ips == NULL) {
                         free(*pp_intfs);
                         free(res);
@@ -273,7 +273,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
                         // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
                         *intfs = htonl(current->IfIndex);
                 }
-                PIP_ADAPTER_UNICAST_ADDRESS_XP p_unicast = current->FirstUnicastAddress;
+                PIP_ADAPTER_UNICAST_ADDRESS p_unicast = current->FirstUnicastAddress;
                 if( p_unicast )
                 {
                         // Take the first unicast address (highest priority)

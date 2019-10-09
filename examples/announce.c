@@ -15,11 +15,16 @@
  */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <signal.h>
 #include <string.h>
 
 #include <microdns/microdns.h>
+
+#include "compat.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 volatile sig_atomic_t sigflag = 0;
 

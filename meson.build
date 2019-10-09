@@ -39,10 +39,9 @@ mdns_micro_version = ver_arr[2]
 
 cc = meson.get_compiler('c')
 
+
 warning_flags = [
-    '-Wall',
     '-Wsign-compare',
-    '-Wextra',
     '-Wstrict-aliasing',
     '-Wstrict-overflow',
     '-Wformat=2',
@@ -54,6 +53,10 @@ warning_flags = [
     '-Wwrite-strings',
     '-Wlogical-op',
 ]
+
+if cc.get_id() != 'msvc'
+    warning_flags += ['-Wall', '-Wextra']
+endif
 
 add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 
@@ -79,7 +82,9 @@ inet_ntop_src = '''
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #endif
-int main() {}
+int main() {
+  inet_ntop(AF_INET, NULL, NULL, 0);
+}
 '''
 
 if cc.links(inet_ntop_src, dependencies: deps)
@@ -100,7 +105,9 @@ poll_src = '''
 #else
 #include <poll.h>
 #endif
-int main() {}
+int main() {
+  poll(NULL, 0, 0);
+}
 '''
 
 if cc.links(poll_src, dependencies: deps)
@@ -127,6 +134,10 @@ if cc.has_header('ifaddrs.h')
     cdata.set('HAVE_IFADDRS_H', 1)
 endif
 
+if cc.has_header('unistd.h')
+	cdata.set('HAVE_UNISTD_H', 1)
+endif
+
 configure_file(output : 'config.h', configuration : cdata)
 
 c_args = ['-DHAVE_CONFIG_H']
@@ -138,6 +149,14 @@ if host_system == 'windows'
         '-D_POSIX_C_SOURCE=200809L',
         '-D_BSD_SOURCE=1'
     ]
+endif
+
+if cc.get_id() == 'msvc'
+    c_args += [
+    '-D_CRT_NONSTDC_NO_DEPRECATE',
+    '-D_CRT_SECURE_NO_WARNINGS',
+    '-D_CRT_SECURE_NO_DEPRECATE',
+]
 endif
 
 libcompat_sources = [

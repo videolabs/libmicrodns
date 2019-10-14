@@ -1,8 +1,16 @@
 -----------------
+libmicrodns 0.1.x
+-----------------
+ * Move the buildsystem to meson
+
+-----------------
 libmicrodns 0.1.0
 -----------------
  * Fix incorrect IPv6 interface index on Windows
  * Pass IPv4/IPv6 addresses to announce callbacks
+ * Improve examples
+ * Fix warnings and potential crashes
+ * Port to WinRT/UWP
 
 -----------------
 libmicrodns 0.0.10

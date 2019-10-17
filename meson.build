@@ -39,8 +39,13 @@ mdns_micro_version = ver_arr[2]
 
 cc = meson.get_compiler('c')
 
+warning_flags = []
 
-warning_flags = [
+if cc.get_id() != 'msvc'
+    warning_flags += ['-Wall', '-Wextra']
+endif
+
+warning_flags += [
     '-Wsign-compare',
     '-Wstrict-aliasing',
     '-Wstrict-overflow',
@@ -53,10 +58,6 @@ warning_flags = [
     '-Wwrite-strings',
     '-Wlogical-op',
 ]
-
-if cc.get_id() != 'msvc'
-    warning_flags += ['-Wall', '-Wextra']
-endif
 
 add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 

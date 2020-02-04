@@ -325,7 +325,8 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
                         /* Avoid recursing on the same element */
                         if (p == orig_ptr)
                                 goto err;
-                        rr_decode(p, &m, root, &buf);
+                        if (rr_decode(p, &m, root, &buf) == NULL)
+                                goto err;
                         if (free_space <= strlen(buf)) {
                                 free(buf);
                                 goto err;

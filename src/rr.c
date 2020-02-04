@@ -289,6 +289,7 @@ static const uint8_t *
 rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 {
         char *s;
+        const uint8_t *orig_ptr = ptr;
 
         s = *ss = malloc(MDNS_DN_MAXSZ);
         if (!s)
@@ -321,6 +322,9 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
 
                         p = root + len;
                         m = ptr - p + *n;
+                        /* Avoid recursing on the same element */
+                        if (p == orig_ptr)
+                                goto err;
                         rr_decode(p, &m, root, &buf);
                         if (free_space <= strlen(buf)) {
                                 free(buf);

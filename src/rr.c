@@ -40,7 +40,7 @@ typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, 
 typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);
 typedef void (*rr_printer)(const union rr_data *);
 
-static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss);
+static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t nb_rec);
 static uint8_t *rr_encode(char *s);
 
 const uint8_t * rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry, int8_t ans);
@@ -99,7 +99,7 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         ptr = read_u16(ptr, n, &data->SRV.priority);
         ptr = read_u16(ptr, n, &data->SRV.weight);
         ptr = read_u16(ptr, n, &data->SRV.port);
-        if ((ptr = rr_decode(ptr, n, root, &data->SRV.target)) == NULL)
+        if ((ptr = rr_decode(ptr, n, root, &data->SRV.target, 0)) == NULL)
                 return (NULL);
         return (ptr);
 }
@@ -139,7 +139,7 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         if (*n == 0)
                 return (NULL);
 
-        if ((ptr = rr_decode(ptr, n, root, &data->PTR.domain)) == NULL)
+        if ((ptr = rr_decode(ptr, n, root, &data->PTR.domain, 0)) == NULL)
                 return (NULL);
         return (ptr);
 }
@@ -286,10 +286,19 @@ rr_print_A(const union rr_data *data)
  * e.g "\x03foo\x03bar\x00" gives "foo.bar"
  */
 static const uint8_t *
-rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
+rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t nb_rec)
 {
         char *s;
         const uint8_t *orig_ptr = ptr;
+
+        /*
+         * 16 is arbitrary here, but it should be high enough for most cases
+         * Ideally, we should store previously analyzed domains with their
+         * associated offset, in order to avoid re-parsing them for each later
+         * records
+         */
+        if (nb_rec > 16)
+                return (NULL);
 
         s = *ss = malloc(MDNS_DN_MAXSZ);
         if (!s)
@@ -325,7 +334,7 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss)
                         /* Avoid recursing on the same element */
                         if (p == orig_ptr)
                                 goto err;
-                        if (rr_decode(p, &m, root, &buf) == NULL)
+                        if (rr_decode(p, &m, root, &buf, nb_rec + 1) == NULL)
                                 goto err;
                         if (free_space <= strlen(buf)) {
                                 free(buf);
@@ -378,7 +387,7 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
 {
         uint16_t tmp;
 
-        ptr = rr_decode(ptr, n, root, &entry->name);
+        ptr = rr_decode(ptr, n, root, &entry->name, 0);
         if (!ptr || *n < 4)
                 return (NULL);
 

@@ -166,12 +166,27 @@ libcompat_sources = [
     'compat/poll.c',
 ]
 
+link_flags=[]
+
+if get_option('fuzzing')
+    if cc.has_argument('-fsanitize=fuzzer')
+        fuzz_flags = ['-fsanitize=fuzzer-no-link,address,undefined']
+        c_args += fuzz_flags
+        c_args += ['-fprofile-instr-generate', '-fcoverage-mapping']
+        link_flags += fuzz_flags
+        link_flags += ['-fprofile-instr-generate', '-fcoverage-mapping']
+    else
+        error('Unsupported required option: -fsanitize=fuzzer')
+    endif
+endif
+
 incdirs = include_directories('include', 'compat')
 
 libcompat = static_library('compat', libcompat_sources,
     include_directories: incdirs,
     dependencies: deps,
-    c_args: c_args
+    c_args: c_args,
+    link_args: link_flags
 )
 
 libmicrodns_sources = [
@@ -189,6 +204,7 @@ install_headers(libmicrodns_headers, subdir: 'microdns')
 libmicrodns = library('microdns', libmicrodns_sources,
     include_directories: incdirs,
     link_with: libcompat,
+    link_args: link_flags,
     dependencies: deps,
     c_args: c_args,
     install: true,
@@ -198,6 +214,7 @@ examples_kwargs = {
     'include_directories': incdirs,
     'link_with': libmicrodns,
     'c_args': c_args,
+    'link_args': link_flags,
 }
 
 executable('listen', 'examples/main.c', kwargs: examples_kwargs)
@@ -205,6 +222,15 @@ executable('announce', 'examples/announce.c', kwargs: examples_kwargs)
 
 unittest_e = executable('unittest', 'tests/unittests.c', kwargs: examples_kwargs)
 test('unittest', unittest_e)
+
+if get_option('fuzzing')
+    executable('mdnsfuzz', 'tests/fuzz.c',
+        include_directories: incdirs,
+        link_with: libmicrodns,
+        link_args: ['-fsanitize=fuzzer,address,undefined', '-lasan', '-lubsan', '-fprofile-instr-generate', '-fcoverage-mapping'],
+        c_args: c_args,
+    )
+endif
 
 pkg_cdata = configuration_data()
 

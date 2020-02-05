@@ -203,6 +203,9 @@ examples_kwargs = {
 executable('listen', 'examples/main.c', kwargs: examples_kwargs)
 executable('announce', 'examples/announce.c', kwargs: examples_kwargs)
 
+unittest_e = executable('unittest', 'tests/unittests.c', kwargs: examples_kwargs)
+test('unittest', unittest_e)
+
 pkg_cdata = configuration_data()
 
 pkg_cdata.set('prefix', join_paths(get_option('prefix')))

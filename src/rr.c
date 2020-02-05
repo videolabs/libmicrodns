@@ -171,7 +171,7 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         if (*n == 0 || *n < len)
                 return (NULL);
 
-        for (; len > 0; len -= l + 1) {
+        for (; len > 0 && *n > 0; len -= l + 1) {
                 struct rr_data_txt *text;
 
                 memcpy(&l, ptr, sizeof(l));

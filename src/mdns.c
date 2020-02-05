@@ -541,6 +541,8 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
 
         n = (size_t)length;
         const uint8_t *ptr = mdns_read_header(buf, &n, hdr);
+        if (ptr == NULL)
+                return (MDNS_ERROR);
 
         num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
         for (size_t i = 0; i < num_entry; ++i) {

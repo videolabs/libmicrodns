@@ -512,18 +512,18 @@ mdns_free(struct rr_entry *entries)
 }
 
 static const uint8_t *
-mdns_read_header(const uint8_t *ptr, size_t n, struct mdns_hdr *hdr)
+mdns_read_header(const uint8_t *ptr, size_t *n, struct mdns_hdr *hdr)
 {
-        if (n <= sizeof(struct mdns_hdr)) {
+        if (*n <= sizeof(struct mdns_hdr)) {
                 errno = ENOSPC;
                 return NULL;
         }
-        ptr = read_u16(ptr, &n, &hdr->id);
-        ptr = read_u16(ptr, &n, &hdr->flags);
-        ptr = read_u16(ptr, &n, &hdr->num_qn);
-        ptr = read_u16(ptr, &n, &hdr->num_ans_rr);
-        ptr = read_u16(ptr, &n, &hdr->num_auth_rr);
-        ptr = read_u16(ptr, &n, &hdr->num_add_rr);
+        ptr = read_u16(ptr, n, &hdr->id);
+        ptr = read_u16(ptr, n, &hdr->flags);
+        ptr = read_u16(ptr, n, &hdr->num_qn);
+        ptr = read_u16(ptr, n, &hdr->num_ans_rr);
+        ptr = read_u16(ptr, n, &hdr->num_auth_rr);
+        ptr = read_u16(ptr, n, &hdr->num_add_rr);
         return ptr;
 }
 
@@ -539,8 +539,8 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
         if ((length = recv(conn->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (MDNS_NETERR);
 
-        const uint8_t *ptr = mdns_read_header(buf, length, hdr);
-        n = length;
+        n = (size_t)length;
+        const uint8_t *ptr = mdns_read_header(buf, &n, hdr);
 
         num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
         for (size_t i = 0; i < num_entry; ++i) {

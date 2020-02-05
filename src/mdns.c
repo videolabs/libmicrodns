@@ -37,6 +37,7 @@
 #include "compat.h"
 #include "utils.h"
 #include "microdns/microdns.h"
+#include "mdns.h"
 
 #define MDNS_PKT_MAXSZ 4096 // read/write buffer size
 
@@ -499,7 +500,7 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
         return (0);
 }
 
-static void
+void
 mdns_free(struct rr_entry *entries)
 {
         struct rr_entry *entry;
@@ -527,45 +528,54 @@ mdns_read_header(const uint8_t *ptr, size_t *n, struct mdns_hdr *hdr)
         return ptr;
 }
 
+int
+mdns_parse(struct mdns_hdr *hdr, struct rr_entry **entries, const uint8_t *buf,
+           size_t length)
+{
+    size_t num_entry;
+    struct rr_entry *entry;
+
+    *entries = NULL;
+
+    const uint8_t *ptr = mdns_read_header(buf, &length, hdr);
+    if (ptr == NULL)
+            return (MDNS_ERROR);
+
+    num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
+    for (size_t i = 0; i < num_entry; ++i) {
+            entry = calloc(1, sizeof(struct rr_entry));
+            if (!entry)
+                    goto err;
+            ptr = rr_read(ptr, &length, buf, entry, i >= hdr->num_qn);
+            if (!ptr) {
+                    mdns_free(entry);
+                    errno = ENOSPC;
+                    goto err;
+            }
+            entry->next = *entries;
+            *entries = entry;
+    }
+    if (*entries == NULL) {
+            return (MDNS_ERROR);
+    }
+    return (0);
+err:
+    mdns_free(*entries);
+    *entries = NULL;
+    return (MDNS_ERROR);
+}
+
 static int
 mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ];
-        size_t num_entry, n;
         ssize_t length;
-        struct rr_entry *entry;
 
         *entries = NULL;
         if ((length = recv(conn->sock, (char *) buf, sizeof(buf), 0)) < 0)
                 return (MDNS_NETERR);
 
-        n = (size_t)length;
-        const uint8_t *ptr = mdns_read_header(buf, &n, hdr);
-        if (ptr == NULL)
-                return (MDNS_ERROR);
-
-        num_entry = hdr->num_qn + hdr->num_ans_rr + hdr->num_add_rr;
-        for (size_t i = 0; i < num_entry; ++i) {
-                entry = calloc(1, sizeof(struct rr_entry));
-                if (!entry)
-                        goto err;
-                ptr = rr_read(ptr, &n, buf, entry, i >= hdr->num_qn);
-                if (!ptr) {
-                        mdns_free(entry);
-                        errno = ENOSPC;
-                        goto err;
-                }
-                entry->next = *entries;
-                *entries = entry;
-        }
-        if (*entries == NULL) {
-                return (MDNS_ERROR);
-        }
-        return (0);
-err:
-        mdns_free(*entries);
-        *entries = NULL;
-        return (MDNS_ERROR);
+        return mdns_parse(hdr, entries, buf, (size_t)length);
 }
 
 void

@@ -322,14 +322,15 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t
                         const uint8_t *p;
                         char *buf;
                         size_t m;
+                        uint16_t offset;
 
-                        if (*n < sizeof(len))
+                        if (*n < sizeof(offset))
                                 goto err;
-                        len &= ~0xC0;
-                        len = (len << 8) | *ptr;
+                        offset = ~0xC0 & len;
+                        offset = (uint16_t)(offset << 8u) | *ptr;
                         advance(1);
 
-                        p = root + len;
+                        p = root + offset;
                         m = ptr - p + *n;
                         /* Avoid recursing on the same element */
                         if (p == orig_ptr)

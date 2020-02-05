@@ -551,7 +551,7 @@ mdns_recv(const struct mdns_conn* conn, struct mdns_hdr *hdr, struct rr_entry **
                         goto err;
                 ptr = rr_read(ptr, &n, buf, entry, i >= hdr->num_qn);
                 if (!ptr) {
-                        free(entry);
+                        mdns_free(entry);
                         errno = ENOSPC;
                         goto err;
                 }

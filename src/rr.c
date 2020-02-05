@@ -324,13 +324,25 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t
                         size_t m;
                         uint16_t offset;
 
-                        if (*n < sizeof(offset))
+                        /*
+                         * We only check if we have enough bytes left to read the
+                         * offset for now, and will check the offset validity
+                         * just after
+                         */
+                        if (*n == 0)
                                 goto err;
                         offset = ~0xC0 & len;
                         offset = (uint16_t)(offset << 8u) | *ptr;
                         advance(1);
 
                         p = root + offset;
+                        /*
+                         * The resulting pointer can only point to a prior record
+                         * We substract 2 here since we already read the 2 offset
+                         * bytes
+                         */
+                        if (p > (ptr - 2))
+                                goto err;
                         m = ptr - p + *n;
                         /* Avoid recursing on the same element */
                         if (p == orig_ptr)

@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "compat.h"
-#include "microdns/utils.h"
+#include "utils.h"
 
 #if defined (__unix__) || defined (__APPLE__)
 struct timeval os_deadline = {

@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "compat.h"
-#include "microdns/utils.h"
+#include "utils.h"
 
 #if defined (_WIN32) && !defined(HAVE_INET_NTOP)
 const char *

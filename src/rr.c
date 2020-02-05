@@ -368,6 +368,7 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t
         return (ptr);
 err:
         free(*ss);
+        *ss = NULL;
         return (NULL);
 }
 

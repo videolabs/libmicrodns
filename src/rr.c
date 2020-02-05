@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "microdns/utils.h"
+#include "utils.h"
 #include "microdns/microdns.h"
 #include "microdns/rr.h"
 

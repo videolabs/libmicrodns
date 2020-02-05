@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 #include "compat.h"
-#include "microdns/utils.h"
+#include "utils.h"
 #include "microdns/microdns.h"
 
 #define MDNS_PKT_MAXSZ 4096 // read/write buffer size

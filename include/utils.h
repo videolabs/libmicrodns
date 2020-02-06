@@ -80,8 +80,8 @@ static inline uint8_t *write_raw(uint8_t *p, const uint8_t *v)
 static inline const uint8_t *read_u16(const uint8_t *p, size_t *s, uint16_t *v)
 {
         *v = 0;
-        *v |= *p++ << 8;
-        *v |= *p++ << 0;
+        *v |= (uint16_t)*p++ << 8;
+        *v |= (uint16_t)*p++ << 0;
         *s -= 2;
         return (p);
 }
@@ -89,10 +89,10 @@ static inline const uint8_t *read_u16(const uint8_t *p, size_t *s, uint16_t *v)
 static inline const uint8_t *read_u32(const uint8_t *p, size_t *s, uint32_t *v)
 {
         *v = 0;
-        *v |= *p++ << 24;
-        *v |= *p++ << 16;
-        *v |= *p++ << 8;
-        *v |= *p++ << 0;
+        *v |= (uint32_t)*p++ << 24;
+        *v |= (uint32_t)*p++ << 16;
+        *v |= (uint32_t)*p++ << 8;
+        *v |= (uint32_t)*p++ << 0;
         *s -= 4;
         return (p);
 }

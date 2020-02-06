@@ -300,6 +300,9 @@ rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t
         if (nb_rec > 16)
                 return (NULL);
 
+        if (*n == 0)
+                return (NULL);
+
         s = *ss = malloc(MDNS_DN_MAXSZ);
         if (!s)
                 return (NULL);

@@ -449,6 +449,8 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
 
         p = ptr = rr_read_RR(ptr, n, root, entry, ans);
         if (ans == 0) return ptr;
+        if (ptr == NULL)
+                return (NULL);
 
         for (size_t i = 0; i < rr_num; ++i) {
                 if (rrs[i].type == entry->type) {

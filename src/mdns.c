@@ -328,6 +328,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         ctx->conns = malloc(ctx->nb_conns * sizeof(*ctx->conns));
         if (ctx->conns == NULL) {
                 free(ifaddrs);
+                free(mdns_ips);
                 freeaddrinfo(res);
                 return (MDNS_ERROR);
         }

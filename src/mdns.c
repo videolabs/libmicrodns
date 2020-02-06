@@ -130,6 +130,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
         *pp_mdns_ips = mdns_ips = malloc(sizeof(*mdns_ips) * nb_if);
         if (mdns_ips == NULL) {
                 free(intfs);
+                *pp_intfs = NULL;
                 freeifaddrs(ifs);
                 return (MDNS_ERROR);
         }
@@ -171,6 +172,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
         *pp_mdns_ips = mdns_ips = malloc(sizeof(*mdns_ips));
         if (mdns_ips == NULL) {
                 free(intfs);
+                *pp_intfs = NULL;
                 return (MDNS_ERROR);
         }
         memset(mdns_ips, 0, sizeof(*mdns_ips));

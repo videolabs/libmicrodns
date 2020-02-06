@@ -170,7 +170,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
         memset(intfs, 0, sizeof(*intfs));
         *pp_mdns_ips = mdns_ips = malloc(sizeof(*mdns_ips));
         if (mdns_ips == NULL) {
-                free(mdns_ips);
+                free(intfs);
                 return (MDNS_ERROR);
         }
         memset(mdns_ips, 0, sizeof(*mdns_ips));

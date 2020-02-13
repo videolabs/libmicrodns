@@ -464,6 +464,9 @@ mdns_write_hdr(uint8_t *ptr, size_t* s, const struct mdns_hdr *hdr)
 {
         uint8_t *p = ptr;
 
+        if (*s < 12)
+                return (-1);
+
         p = write_u16(p, s, hdr->id);
         p = write_u16(p, s, hdr->flags);
         p = write_u16(p, s, hdr->num_qn);
@@ -483,6 +486,8 @@ mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
     ssize_t l;
 
     l = mdns_write_hdr(buf, &bufSize, hdr);
+    if (l < 0)
+            return (MDNS_ERROR);
     *length += l;
 
     for (entry = entries; entry; entry = entry->next) {

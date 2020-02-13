@@ -110,8 +110,12 @@ rr_write_SRV(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
         uint8_t *target, *p = ptr;
 
         if ((target = rr_encode(entry->data.SRV.target)) == NULL)
-                return (0);
+                return (-1);
 
+        if (*s < 6) {
+                free(target);
+                return -1;
+        }
         p = write_u16(p, s, entry->data.SRV.priority);
         p = write_u16(p, s, entry->data.SRV.weight);
         p = write_u16(p, s, entry->data.SRV.port);

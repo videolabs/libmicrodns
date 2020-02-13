@@ -513,6 +513,10 @@ rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
                        l = (*rrs[i].write)(p + n, s, entry);
                        if (l < 0)
                                return (-1);
+                       // Do not write the payload length if we didn't write
+                       // anything, but continue nevertheless
+                       if (l == 0)
+                               continue;
                        // fill in data length after its computed
                        write_u16(p + n - 2, NULL, l);
                        n += l;

@@ -453,10 +453,14 @@ rr_write_RR(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
         if (p == NULL)
                 return (-1);
 
+        if (*s < 4)
+                return (-1);
         p = write_u16(p, s, entry->type);
         p = write_u16(p, s, (entry->rr_class & ~0x8000) | (entry->msbit << 15));
 
         if (ans) {
+                if (*s < 6)
+                        return (-1);
                 p = write_u32(p, s, entry->ttl);
                 p = write_u16(p, s, entry->data_len);
         }

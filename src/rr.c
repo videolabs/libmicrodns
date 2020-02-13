@@ -479,7 +479,7 @@ rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *p = ptr;
         ssize_t n = 0;
-        uint16_t l = 0;
+        ssize_t l = 0;
 
         n = rr_write_RR(p, s, entry, ans);
         if (n < 0)
@@ -490,6 +490,8 @@ rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
         for (size_t i = 0; i < rr_num; ++i) {
                if (rrs[i].type == entry->type) {
                        l = (*rrs[i].write)(p + n, s, entry);
+                       if (l < 0)
+                               return (-1);
                        // fill in data length after its computed
                        write_u16(p + n - 2, NULL, l);
                        n += l;

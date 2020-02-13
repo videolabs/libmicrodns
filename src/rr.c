@@ -208,6 +208,8 @@ rr_write_TXT(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
         struct rr_data_txt *text = entry->data.TXT;
         while (text) {
                 l = strlen(text->txt);
+                if (*s < l + 1)
+                        return (-1);
                 memcpy(p, &l, 1);
                 memcpy(p+1, text->txt, l);
                 p += l + 1;

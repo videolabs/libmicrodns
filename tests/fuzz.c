@@ -36,7 +36,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *buff, size_t size)
     // Same size as MDNS_PKT_MAXSZ in mdns.c
     uint8_t buf[4096] = {0};
     size_t len;
-    mdns_write(&hdr, entries, buf, &len);
+    mdns_write(&hdr, entries, buf, sizeof(buf), &len);
     mdns_free(entries);
     return 0;
 }

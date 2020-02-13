@@ -67,11 +67,11 @@ struct mdns_ctx {
 };
 
 static int mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port);
-static size_t mdns_write_hdr(uint8_t *, const struct mdns_hdr *);
+static size_t mdns_write_hdr(uint8_t *, size_t *s, const struct mdns_hdr *);
 static int strrcmp(const char *, const char *);
 
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *, int8_t ans);
-extern size_t rr_write(uint8_t *, const struct rr_entry *, int8_t ans);
+extern size_t rr_write(uint8_t *, size_t *, const struct rr_entry *, int8_t ans);
 extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 
@@ -460,33 +460,33 @@ mdns_destroy(struct mdns_ctx *ctx)
 }
 
 static size_t
-mdns_write_hdr(uint8_t *ptr, const struct mdns_hdr *hdr)
+mdns_write_hdr(uint8_t *ptr, size_t* s, const struct mdns_hdr *hdr)
 {
         uint8_t *p = ptr;
 
-        p = write_u16(p, hdr->id);
-        p = write_u16(p, hdr->flags);
-        p = write_u16(p, hdr->num_qn);
-        p = write_u16(p, hdr->num_ans_rr);
-        p = write_u16(p, hdr->num_auth_rr);
-        p = write_u16(p, hdr->num_add_rr);
+        p = write_u16(p, s, hdr->id);
+        p = write_u16(p, s, hdr->flags);
+        p = write_u16(p, s, hdr->num_qn);
+        p = write_u16(p, s, hdr->num_ans_rr);
+        p = write_u16(p, s, hdr->num_auth_rr);
+        p = write_u16(p, s, hdr->num_add_rr);
         return (p - ptr);
 }
 
 int
 mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
-           uint8_t *buf, size_t* length)
+           uint8_t *buf, size_t bufSize, size_t* length)
 {
     *length = 0;
     if (!entries) return (MDNS_ERROR);
     const struct rr_entry *entry = entries;
     size_t l;
 
-    l = mdns_write_hdr(buf, hdr);
+    l = mdns_write_hdr(buf, &bufSize, hdr);
     *length += l;
 
     for (entry = entries; entry; entry = entry->next) {
-            l = rr_write(buf + *length, entry, (hdr->flags & FLAG_QR) > 0);
+            l = rr_write(buf + *length, &bufSize, entry, (hdr->flags & FLAG_QR) > 0);
             if (l < 0) {
                     return (MDNS_STDERR);
             }
@@ -501,7 +501,7 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
         uint8_t buf[MDNS_PKT_MAXSZ] = {0};
         size_t l;
 
-        if (mdns_write(hdr, entries, buf, &l) < 0)
+        if (mdns_write(hdr, entries, buf, sizeof(buf), &l) < 0)
                 return (MDNS_ERROR);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i) {

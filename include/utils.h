@@ -51,29 +51,34 @@ static inline socklen_t ss_len(const struct sockaddr_storage *ss)
                                      : sizeof(struct sockaddr_in6));
 }
 
-static inline uint8_t *write_u16(uint8_t *p, const uint16_t v)
+static inline uint8_t *write_u16(uint8_t *p, size_t *s, const uint16_t v)
 {
         *p++ = (v >> 8) & 0xFF;
         *p++ = (v >> 0) & 0xFF;
+        if (s != NULL)
+                *s -= 2;
         return (p);
 }
 
-static inline uint8_t *write_u32(uint8_t *p, const uint32_t v)
+static inline uint8_t *write_u32(uint8_t *p, size_t *s, const uint32_t v)
 {
         *p++ = (v >> 24) & 0xFF;
         *p++ = (v >> 16) & 0xFF;
         *p++ = (v >>  8) & 0xFF;
         *p++ = (v >>  0) & 0xFF;
+        if (s != NULL)
+                *s -= 4;
         return (p);
 }
 
-static inline uint8_t *write_raw(uint8_t *p, const uint8_t *v)
+static inline uint8_t *write_raw(uint8_t *p, size_t* s, const uint8_t *v)
 {
         size_t len;
 
         len = strlen((const char *) v) + 1;
         memcpy(p, v, len);
         p += len;
+        *s -= len;
         return (p);
 }
 

@@ -37,7 +37,7 @@
 #include "microdns/rr.h"
 
 typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);
+typedef size_t (*rr_writer)(uint8_t *, size_t *, const struct rr_entry *);
 typedef void (*rr_printer)(const union rr_data *);
 
 static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t nb_rec);
@@ -50,12 +50,12 @@ static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, st
 static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
-size_t rr_write(uint8_t *ptr, const struct rr_entry *entry, int8_t ans);
-static size_t rr_write_SRV(uint8_t *, const struct rr_entry *);
-static size_t rr_write_PTR(uint8_t *, const struct rr_entry *);
-static size_t rr_write_TXT(uint8_t *, const struct rr_entry *);
-static size_t rr_write_AAAA(uint8_t *, const struct rr_entry *);
-static size_t rr_write_A(uint8_t *, const struct rr_entry *);
+size_t rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans);
+static size_t rr_write_SRV(uint8_t *, size_t *, const struct rr_entry *);
+static size_t rr_write_PTR(uint8_t *, size_t *, const struct rr_entry *);
+static size_t rr_write_TXT(uint8_t *, size_t *, const struct rr_entry *);
+static size_t rr_write_AAAA(uint8_t *, size_t *, const struct rr_entry *);
+static size_t rr_write_A(uint8_t *, size_t *, const struct rr_entry *);
 
 void rr_print(const struct rr_entry *entry);
 static void rr_print_SRV(const union rr_data *);
@@ -105,17 +105,17 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static size_t
-rr_write_SRV(uint8_t *ptr, const struct rr_entry *entry)
+rr_write_SRV(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *target, *p = ptr;
 
         if ((target = rr_encode(entry->data.SRV.target)) == NULL)
                 return (0);
 
-        p = write_u16(p, entry->data.SRV.priority);
-        p = write_u16(p, entry->data.SRV.weight);
-        p = write_u16(p, entry->data.SRV.port);
-        p = write_raw(p, target);
+        p = write_u16(p, s, entry->data.SRV.priority);
+        p = write_u16(p, s, entry->data.SRV.weight);
+        p = write_u16(p, s, entry->data.SRV.port);
+        p = write_raw(p, s, target);
         free(target);
         return (p - ptr);
 }
@@ -145,12 +145,12 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static size_t
-rr_write_PTR(uint8_t *ptr, const struct rr_entry *entry)
+rr_write_PTR(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *domain, *p = ptr;
         if ((domain = rr_encode(entry->data.PTR.domain)) == NULL)
                 return (0);
-        p = write_raw(p, domain);
+        p = write_raw(p, s, domain);
         free(domain);
         return (p - ptr);
 }
@@ -192,7 +192,7 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
 }
 
 static size_t
-rr_write_TXT(uint8_t *ptr, const struct rr_entry *entry)
+rr_write_TXT(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *p = ptr;
         uint8_t l;
@@ -203,6 +203,7 @@ rr_write_TXT(uint8_t *ptr, const struct rr_entry *entry)
                 memcpy(p, &l, 1);
                 memcpy(p+1, text->txt, l);
                 p += l + 1;
+                *s -= l + 1;
                 text = text->next;
         }
         return (p - ptr);
@@ -238,10 +239,11 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry
 }
 
 static size_t
-rr_write_AAAA(uint8_t *ptr, const struct rr_entry *entry)
+rr_write_AAAA(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.AAAA.addr);
         memcpy(ptr, &entry->data.AAAA.addr, len);
+        *s -= len;
         return len;
 }
 
@@ -268,10 +270,11 @@ rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *e
 }
 
 static size_t
-rr_write_A(uint8_t *ptr, const struct rr_entry *entry)
+rr_write_A(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.A.addr);
         memcpy(ptr, &entry->data.A.addr, sizeof(entry->data.A.addr));
+        s -= len;
         return len;
 }
 
@@ -424,20 +427,20 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
 }
 
 static size_t
-rr_write_RR(uint8_t *ptr, const struct rr_entry *entry, int8_t ans)
+rr_write_RR(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *name, *p = ptr;
 
         if ((name = rr_encode(entry->name)) == NULL)
                 return (0);
 
-        p = write_raw(p, name);
-        p = write_u16(p, entry->type);
-        p = write_u16(p, (entry->rr_class & ~0x8000) | (entry->msbit << 15));
+        p = write_raw(p, s, name);
+        p = write_u16(p, s, entry->type);
+        p = write_u16(p, s, (entry->rr_class & ~0x8000) | (entry->msbit << 15));
 
         if (ans) {
-                p = write_u32(p, entry->ttl);
-                p = write_u16(p, entry->data_len);
+                p = write_u32(p, s, entry->ttl);
+                p = write_u16(p, s, entry->data_len);
         }
         free(name);
         return (p - ptr);
@@ -472,22 +475,22 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
 }
 
 size_t
-rr_write(uint8_t *ptr, const struct rr_entry *entry, int8_t ans)
+rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *p = ptr;
         size_t n = 0;
         uint16_t l = 0;
 
-        l = rr_write_RR(p, entry, ans);
+        l = rr_write_RR(p, s, entry, ans);
         n += l;
 
         if (ans == 0) return n;
 
         for (size_t i = 0; i < rr_num; ++i) {
                if (rrs[i].type == entry->type) {
-                       l = (*rrs[i].write)(p + n, entry);
+                       l = (*rrs[i].write)(p + n, s, entry);
                        // fill in data length after its computed
-                       write_u16(p + n - 2, l);
+                       write_u16(p + n - 2, NULL, l);
                        n += l;
                }
         }

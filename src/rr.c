@@ -41,7 +41,7 @@ typedef size_t (*rr_writer)(uint8_t *, const struct rr_entry *);
 typedef void (*rr_printer)(const union rr_data *);
 
 static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t nb_rec);
-static uint8_t *rr_encode(char *s);
+static uint8_t *rr_encode(const char *s);
 
 const uint8_t * rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *entry, int8_t ans);
 static const uint8_t *rr_read_SRV(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
@@ -380,10 +380,10 @@ err:
  * e.g "foo.bar" gives "\x03foo\x03bar\x00"
  */
 static uint8_t *
-rr_encode(char *s)
+rr_encode(const char *s)
 {
         uint8_t *buf, *b, l = 0;
-        char *p = s;
+        const char *p = s;
 
         buf = malloc(strlen(s) + 2);
         if (!buf)

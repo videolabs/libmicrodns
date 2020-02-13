@@ -71,7 +71,7 @@ static size_t mdns_write_hdr(uint8_t *, size_t *s, const struct mdns_hdr *);
 static int strrcmp(const char *, const char *);
 
 extern const uint8_t *rr_read(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *, int8_t ans);
-extern size_t rr_write(uint8_t *, size_t *, const struct rr_entry *, int8_t ans);
+extern ssize_t rr_write(uint8_t *, size_t *, const struct rr_entry *, int8_t ans);
 extern void rr_print(const struct rr_entry *);
 extern void rr_free(struct rr_entry *);
 

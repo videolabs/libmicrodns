@@ -37,7 +37,7 @@
 #include "microdns/rr.h"
 
 typedef const uint8_t *(*rr_reader)(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
-typedef size_t (*rr_writer)(uint8_t *, size_t *, const struct rr_entry *);
+typedef ssize_t (*rr_writer)(uint8_t *, size_t *, const struct rr_entry *);
 typedef void (*rr_printer)(const union rr_data *);
 
 static const uint8_t *rr_decode(const uint8_t *ptr, size_t *n, const uint8_t *root, char **ss, uint8_t nb_rec);
@@ -50,12 +50,12 @@ static const uint8_t *rr_read_TXT(const uint8_t *, size_t *, const uint8_t *, st
 static const uint8_t *rr_read_AAAA(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 static const uint8_t *rr_read_A(const uint8_t *, size_t *, const uint8_t *, struct rr_entry *);
 
-size_t rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans);
-static size_t rr_write_SRV(uint8_t *, size_t *, const struct rr_entry *);
-static size_t rr_write_PTR(uint8_t *, size_t *, const struct rr_entry *);
-static size_t rr_write_TXT(uint8_t *, size_t *, const struct rr_entry *);
-static size_t rr_write_AAAA(uint8_t *, size_t *, const struct rr_entry *);
-static size_t rr_write_A(uint8_t *, size_t *, const struct rr_entry *);
+ssize_t rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans);
+static ssize_t rr_write_SRV(uint8_t *, size_t *, const struct rr_entry *);
+static ssize_t rr_write_PTR(uint8_t *, size_t *, const struct rr_entry *);
+static ssize_t rr_write_TXT(uint8_t *, size_t *, const struct rr_entry *);
+static ssize_t rr_write_AAAA(uint8_t *, size_t *, const struct rr_entry *);
+static ssize_t rr_write_A(uint8_t *, size_t *, const struct rr_entry *);
 
 void rr_print(const struct rr_entry *entry);
 static void rr_print_SRV(const union rr_data *);
@@ -104,7 +104,7 @@ rr_read_SRV(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static size_t
+static ssize_t
 rr_write_SRV(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *target, *p = ptr;
@@ -144,7 +144,7 @@ rr_read_PTR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static size_t
+static ssize_t
 rr_write_PTR(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *domain, *p = ptr;
@@ -191,7 +191,7 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
         return (ptr);
 }
 
-static size_t
+static ssize_t
 rr_write_TXT(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *p = ptr;
@@ -238,7 +238,7 @@ rr_read_AAAA(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry
         return (ptr);
 }
 
-static size_t
+static ssize_t
 rr_write_AAAA(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.AAAA.addr);
@@ -269,7 +269,7 @@ rr_read_A(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *e
         return (ptr);
 }
 
-static size_t
+static ssize_t
 rr_write_A(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.A.addr);
@@ -474,7 +474,7 @@ rr_read(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *ent
         return (ptr);
 }
 
-size_t
+ssize_t
 rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *p = ptr;

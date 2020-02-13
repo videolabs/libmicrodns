@@ -382,6 +382,8 @@ err:
 static uint8_t *
 rr_encode(const char *s)
 {
+        if (!s)
+                return (NULL);
         uint8_t *buf, *b, l = 0;
         const char *p = s;
 

@@ -117,6 +117,8 @@ rr_write_SRV(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
         p = write_u16(p, s, entry->data.SRV.port);
         p = write_raw(p, s, target);
         free(target);
+        if (p == NULL)
+                return (-1);
         return (p - ptr);
 }
 
@@ -152,6 +154,8 @@ rr_write_PTR(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
                 return (0);
         p = write_raw(p, s, domain);
         free(domain);
+        if (p == NULL)
+                return -1;
         return (p - ptr);
 }
 
@@ -435,6 +439,10 @@ rr_write_RR(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
                 return (-1);
 
         p = write_raw(p, s, name);
+        free(name);
+        if (p == NULL)
+                return (-1);
+
         p = write_u16(p, s, entry->type);
         p = write_u16(p, s, (entry->rr_class & ~0x8000) | (entry->msbit << 15));
 
@@ -442,7 +450,6 @@ rr_write_RR(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
                 p = write_u32(p, s, entry->ttl);
                 p = write_u16(p, s, entry->data_len);
         }
-        free(name);
         return (p - ptr);
 }
 

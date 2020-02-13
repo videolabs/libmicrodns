@@ -76,6 +76,8 @@ static inline uint8_t *write_raw(uint8_t *p, size_t* s, const uint8_t *v)
         size_t len;
 
         len = strlen((const char *) v) + 1;
+        if (*s < len)
+                return (NULL);
         memcpy(p, v, len);
         p += len;
         *s -= len;

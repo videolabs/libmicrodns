@@ -480,7 +480,7 @@ mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
     *length = 0;
     if (!entries) return (MDNS_ERROR);
     const struct rr_entry *entry = entries;
-    size_t l;
+    ssize_t l;
 
     l = mdns_write_hdr(buf, &bufSize, hdr);
     *length += l;

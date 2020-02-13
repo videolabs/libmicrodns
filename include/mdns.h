@@ -32,6 +32,9 @@
 int
 mdns_parse(struct mdns_hdr *hdr, struct rr_entry **entries, const uint8_t *buf,
            size_t length);
+int
+mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
+           uint8_t *buf, size_t* length);
 
 void
 mdns_free(struct rr_entry *entries);

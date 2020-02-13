@@ -471,27 +471,38 @@ mdns_write_hdr(uint8_t *ptr, const struct mdns_hdr *hdr)
 }
 
 int
+mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
+           uint8_t *buf, size_t* length)
+{
+    *length = 0;
+    if (!entries) return (MDNS_ERROR);
+    const struct rr_entry *entry = entries;
+    size_t l;
+
+    l = mdns_write_hdr(buf, hdr);
+    *length += l;
+
+    for (entry = entries; entry; entry = entry->next) {
+            l = rr_write(buf + *length, entry, (hdr->flags & FLAG_QR) > 0);
+            if (l < 0) {
+                    return (MDNS_STDERR);
+            }
+            *length += l;
+    }
+    return (0);
+}
+
+int
 mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const struct rr_entry *entries)
 {
         uint8_t buf[MDNS_PKT_MAXSZ] = {0};
-        const struct rr_entry *entry = entries;
-        ssize_t n = 0, l, r;
+        size_t l;
 
-        if (!entries) return (MDNS_ERROR);
-
-        l = mdns_write_hdr(buf, hdr);
-        n += l;
-
-        for (entry = entries; entry; entry = entry->next) {
-                l = rr_write(buf+n, entry, (hdr->flags & FLAG_QR) > 0);
-                if (l < 0) {
-                        return (MDNS_STDERR);
-                }
-                n += l;
-        }
+        if (mdns_write(hdr, entries, buf, &l) < 0)
+                return (MDNS_ERROR);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i) {
-            r = sendto(ctx->conns[i].sock, (const char *) buf, n, 0,
+            ssize_t r = sendto(ctx->conns[i].sock, (const char *) buf, l, 0,
                     (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr));
             if (r < 0)
                 return (MDNS_NETERR);

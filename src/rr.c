@@ -426,13 +426,13 @@ rr_read_RR(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry *
         return ptr;
 }
 
-static size_t
+static ssize_t
 rr_write_RR(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *name, *p = ptr;
 
         if ((name = rr_encode(entry->name)) == NULL)
-                return (0);
+                return (-1);
 
         p = write_raw(p, s, name);
         p = write_u16(p, s, entry->type);
@@ -478,11 +478,12 @@ ssize_t
 rr_write(uint8_t *ptr, size_t *s, const struct rr_entry *entry, int8_t ans)
 {
         uint8_t *p = ptr;
-        size_t n = 0;
+        ssize_t n = 0;
         uint16_t l = 0;
 
-        l = rr_write_RR(p, s, entry, ans);
-        n += l;
+        n = rr_write_RR(p, s, entry, ans);
+        if (n < 0)
+                return (-1);
 
         if (ans == 0) return n;
 

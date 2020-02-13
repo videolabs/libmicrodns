@@ -252,6 +252,8 @@ static ssize_t
 rr_write_AAAA(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         size_t len = sizeof(entry->data.AAAA.addr);
+        if (*s < len)
+                return (-1);
         memcpy(ptr, &entry->data.AAAA.addr, len);
         *s -= len;
         return len;

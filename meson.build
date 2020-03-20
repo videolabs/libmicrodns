@@ -205,17 +205,6 @@ libmicrodns = library('microdns', libmicrodns_sources,
     install: true,
 )
 
-examples_kwargs = {
-    'include_directories': incdirs,
-    'link_with': libmicrodns,
-    'c_args': c_args,
-    'link_args': link_flags,
-}
-
-executable('listen', 'examples/main.c', kwargs: examples_kwargs)
-executable('announce', 'examples/announce.c', kwargs: examples_kwargs)
-
-
 pkg_cdata = configuration_data()
 
 pkg_cdata.set('prefix', join_paths(get_option('prefix')))
@@ -252,4 +241,5 @@ configure_file(
     configuration: doc_cdata
 )
 
+subdir('examples')
 subdir('tests')

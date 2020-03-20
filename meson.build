@@ -215,17 +215,6 @@ examples_kwargs = {
 executable('listen', 'examples/main.c', kwargs: examples_kwargs)
 executable('announce', 'examples/announce.c', kwargs: examples_kwargs)
 
-unittest_e = executable('unittest', 'tests/unittests.c', kwargs: examples_kwargs)
-test('unittest', unittest_e)
-
-if get_option('fuzzing')
-    executable('mdnsfuzz', 'tests/fuzz.c',
-        include_directories: incdirs,
-        link_with: libmicrodns,
-        link_args: ['-fsanitize=fuzzer,address,undefined', '-lasan', '-lubsan', '-fprofile-instr-generate', '-fcoverage-mapping'],
-        c_args: c_args,
-    )
-endif
 
 pkg_cdata = configuration_data()
 
@@ -262,3 +251,5 @@ configure_file(
     output: 'Doxyfile',
     configuration: doc_cdata
 )
+
+subdir('tests')

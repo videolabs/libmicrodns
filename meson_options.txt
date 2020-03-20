@@ -1,1 +1,3 @@
 option('fuzzing', type: 'boolean', value: false)
+
+option('tests', type: 'feature', value: 'auto')

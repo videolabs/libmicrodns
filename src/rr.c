@@ -203,7 +203,7 @@ static ssize_t
 rr_write_TXT(uint8_t *ptr, size_t *s, const struct rr_entry *entry)
 {
         uint8_t *p = ptr;
-        uint8_t l;
+        size_t l;
 
         struct rr_data_txt *text = entry->data.TXT;
         while (text) {

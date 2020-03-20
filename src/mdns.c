@@ -774,7 +774,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                         if ((pfd[i].revents & POLLIN) == 0)
                                 continue;
                         r = mdns_recv(&ctx->conns[i], &qhdr, &question);
-                        if (r == MDNS_NETERR)
+                        if (r < 0)
                                 continue;
                         if (qhdr.num_qn == 0)
                                 goto again;

@@ -3,6 +3,12 @@ libmicrodns_sources = [
     'rr.c'
 ]
 
+if host_machine.system() == 'windows'
+    mdns_soversion = ''
+else
+    mdns_soversion = mdns_major_version
+endif
+
 libmicrodns = library('microdns', libmicrodns_sources,
     include_directories: incdirs,
     link_with: libcompat,
@@ -10,4 +16,6 @@ libmicrodns = library('microdns', libmicrodns_sources,
     dependencies: deps,
     c_args: c_args,
     install: true,
+    soversion: mdns_soversion,
+    version: mdns_soname_version,
 )

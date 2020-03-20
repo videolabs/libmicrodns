@@ -1,7 +1,9 @@
 -----------------
-libmicrodns 0.1.x
+libmicrodns 0.1.1
 -----------------
  * Move the buildsystem to meson
+ * Fix many security issues
+ * Fix memory leaks
 
 -----------------
 libmicrodns 0.1.0

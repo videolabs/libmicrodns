@@ -41,10 +41,6 @@ cc = meson.get_compiler('c')
 
 warning_flags = []
 
-if cc.get_id() != 'msvc'
-    warning_flags += ['-Wall', '-Wextra']
-endif
-
 warning_flags += [
     '-Wsign-compare',
     '-Wstrict-aliasing',

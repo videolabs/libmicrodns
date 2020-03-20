@@ -155,12 +155,6 @@ if cc.get_id() == 'msvc'
 ]
 endif
 
-libcompat_sources = [
-    'compat/compat.c',
-    'compat/inet.c',
-    'compat/poll.c',
-]
-
 link_flags=[]
 
 if get_option('fuzzing')
@@ -177,12 +171,7 @@ endif
 
 incdirs = include_directories('.', 'include', 'compat')
 
-libcompat = static_library('compat', libcompat_sources,
-    include_directories: incdirs,
-    dependencies: deps,
-    c_args: c_args,
-    link_args: link_flags
-)
+subdir('compat')
 
 libmicrodns_sources = [
     'src/mdns.c',

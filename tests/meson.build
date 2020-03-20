@@ -2,9 +2,12 @@ if get_option('tests').disabled()
     subdir_done()
 endif
 
+mdns_objs = libmicrodns.extract_all_objects(recursive: true)
+
 unittest_e = executable('unittest', 'unittests.c',
     include_directories: incdirs,
-    link_with: libmicrodns,
+    objects: mdns_objs,
+    link_with: libcompat,
     c_args: c_args,
     link_args: link_flags
 )

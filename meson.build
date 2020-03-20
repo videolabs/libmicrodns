@@ -175,7 +175,7 @@ if get_option('fuzzing')
     endif
 endif
 
-incdirs = include_directories('include', 'compat')
+incdirs = include_directories('.', 'include', 'compat')
 
 libcompat = static_library('compat', libcompat_sources,
     include_directories: incdirs,

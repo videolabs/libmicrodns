@@ -29,14 +29,15 @@
 
 #include "microdns/microdns.h"
 
-int
+MDNS_EXPORT int
 mdns_parse(struct mdns_hdr *hdr, struct rr_entry **entries, const uint8_t *buf,
            size_t length);
-int
+
+MDNS_EXPORT int
 mdns_write(const struct mdns_hdr *hdr, const struct rr_entry *entries,
            uint8_t *buf, size_t bufSize, size_t* length);
 
-void
+MDNS_EXPORT void
 mdns_free(struct rr_entry *entries);
 
 #endif // MDNS_H

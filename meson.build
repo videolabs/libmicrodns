@@ -172,27 +172,8 @@ endif
 incdirs = include_directories('.', 'include', 'compat')
 
 subdir('compat')
-
-libmicrodns_sources = [
-    'src/mdns.c',
-    'src/rr.c'
-]
-
-libmicrodns_headers = [
-    'include/microdns/microdns.h',
-    'include/microdns/rr.h',
-]
-
-install_headers(libmicrodns_headers, subdir: 'microdns')
-
-libmicrodns = library('microdns', libmicrodns_sources,
-    include_directories: incdirs,
-    link_with: libcompat,
-    link_args: link_flags,
-    dependencies: deps,
-    c_args: c_args,
-    install: true,
-)
+subdir('include')
+subdir('src')
 
 pkg_cdata = configuration_data()
 

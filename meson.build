@@ -51,7 +51,6 @@ warning_flags += [
     '-Wstrict-overflow',
     '-Wformat=2',
     '-Wno-unused-parameter',
-    '-pipe',
     '-Wcast-align',
     '-Wpointer-arith',
     '-Wmissing-prototypes',

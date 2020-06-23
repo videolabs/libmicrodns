@@ -1,7 +1,9 @@
 /**
+ * Copyright © 2007-2012 Rémi Denis-Courmont
  * Copyright © 2014-2015 VideoLabs SAS
  *
- * Author: Jonathan Calmels <jbjcalmels@gmail.com>
+ * Author: Rémi Denis-Courmont
+ *         Jonathan Calmels <jbjcalmels@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

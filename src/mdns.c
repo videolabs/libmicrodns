@@ -760,6 +760,14 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                         return (MDNS_NETERR);
         }
 
+        /* Send the initial announce (RFC 6762 §8.3) */
+        for (svc = ctx->services; svc; svc = svc->next) {
+            for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
+                svc->announce_callback(svc->p_cookie, 0,
+                                       &ctx->conns[i].mdns_ip, NULL);
+            }
+        }
+
         for (; stop(p_cookie) == false;) {
                 struct pollfd *pfd = alloca( sizeof(*pfd) * ctx->nb_conns );
 

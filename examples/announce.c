@@ -44,7 +44,7 @@ static bool stop(void *cbarg)
 
 static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const struct rr_entry *entry)
 {
-        if (entry->type != RR_PTR)
+        if (entry != NULL && entry->type != RR_PTR)
         {
                 printf("Unsupported request type: %d\n", entry->type);
                 return;
@@ -52,8 +52,7 @@ static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const st
         struct mdns_ctx *ctx = (struct mdns_ctx *) cbarg;
         struct mdns_hdr hdr = {0};
         struct rr_entry answers[4] = {{0}}; // A/AAAA, SRV, TXT, PTR
-        hdr.flags |= FLAG_QR;
-        hdr.flags |= FLAG_AA;
+
         hdr.num_ans_rr = sizeof(answers) / sizeof(answers[0]);
 
         for (int i = 0; i < hdr.num_ans_rr; i++)
@@ -102,7 +101,18 @@ static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const st
                 memcpy(&answers[3].data.AAAA.addr, &mdns_ip->ipv6, 
                         sizeof(answers[3].data.AAAA.addr));
         }
+        if ( entry == NULL )
+        {
+            /* Send the initial probe */
+            hdr.num_qn = hdr.num_ans_rr;
+            hdr.num_ans_rr = 0;
+            mdns_entries_send(ctx, &hdr, answers);
+            hdr.num_ans_rr = hdr.num_qn;
+            hdr.num_qn = 0;
+        }
 
+        hdr.flags |= FLAG_QR;
+        hdr.flags |= FLAG_AA;
         mdns_entries_send(ctx, &hdr, answers);
 }
 

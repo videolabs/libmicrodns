@@ -140,12 +140,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                     !mdns_is_interface_valuable(c))
                         continue;
                 memcpy(intfs, c->ifa_addr, sizeof(*intfs));
-                if (c->ifa_addr->sa_family == AF_INET) {
-                        memcpy(mdns_ips, c->ifa_addr, sizeof(struct sockaddr_in));
-                }
-                else {
-                        memcpy(mdns_ips, c->ifa_addr, sizeof(struct sockaddr_in6));
-                }
+                memcpy(mdns_ips, c->ifa_addr, sa_len(c->ifa_addr));
                 mdns_ips++;
                 intfs++;
         }
@@ -332,7 +327,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 ctx->conns[i].if_addr = ifaddrs[i];
                 ctx->conns[i].intf_addr = mdns_ips[i];
                 memcpy(&ctx->conns[i].mcast_addr, res->ai_addr,
-                       ss_len((struct sockaddr_storage*)res->ai_addr));
+                       sa_len(res->ai_addr));
         }
         free(ifaddrs);
         free(mdns_ips);

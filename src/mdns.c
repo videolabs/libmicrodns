@@ -57,12 +57,12 @@ struct mdns_conn {
         sock_t sock;
         multicast_if if_addr;  // NB: In Windows this is the interface index
         struct sockaddr_storage mdns_ip;  // IP address and family of the interface
+        struct sockaddr_storage mcast_addr; // The multicast address targeted by this connection
 };
 
 struct mdns_ctx {
         struct mdns_conn *conns;
         size_t nb_conns;
-        struct sockaddr_storage addr;
         struct mdns_svc *services;
 };
 
@@ -320,7 +320,6 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 freeaddrinfo(res);
                 return (MDNS_NETERR);
         }
-        memcpy(&ctx->addr, res->ai_addr, res->ai_addrlen);
         ctx->conns = malloc(ctx->nb_conns * sizeof(*ctx->conns));
         if (ctx->conns == NULL) {
                 free(ifaddrs);
@@ -332,6 +331,8 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 ctx->conns[i].sock = INVALID_SOCKET;
                 ctx->conns[i].if_addr = ifaddrs[i];
                 ctx->conns[i].mdns_ip = mdns_ips[i];
+                memcpy(&ctx->conns[i].mcast_addr, res->ai_addr,
+                       ss_len((struct sockaddr_storage*)res->ai_addr));
         }
         free(ifaddrs);
         free(mdns_ips);
@@ -374,6 +375,8 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                 return mdns_destroy(ctx), (res);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i ) {
+                struct sockaddr* sa_addr = (struct sockaddr*)&ctx->conns[i].mcast_addr;
+                struct sockaddr_storage* ss_addr = (struct sockaddr_storage*)&ctx->conns[i].mcast_addr;
                 if ((ctx->conns[i].sock = socket(ctx->conns[i].mdns_ip.ss_family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                         return mdns_destroy(ctx), (MDNS_NETERR);
                 if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &on_off, sizeof(on_off)) < 0)
@@ -381,7 +384,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
     #ifdef _WIN32
             /* bind the receiver on any local address */
             memset(&dumb, 0, sizeof(dumb));
-            dumb.ss.ss_family = ss_family(&ctx->addr);
+            dumb.ss.ss_family = ss_family(&ctx->conns[i].mdns_ip);
             if (dumb.ss.ss_family == AF_INET) {
                 dumb.sin.sin_port = htons(port);
                 dumb.sin.sin_addr.s_addr = INADDR_ANY;
@@ -393,11 +396,11 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
             if (bind(ctx->conns[i].sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 #else /* _WIN32 */
-            if (bind(ctx->conns[i].sock, (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr)) < 0)
+            if (bind(ctx->conns[i].sock, sa_addr, ss_len(ss_addr)) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 #endif /* _WIN32 */
 
-            if (os_mcast_join(ctx->conns[i].sock, &ctx->addr, ctx->conns[i].if_addr) < 0)
+            if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].if_addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             if (setsockopt(ctx->conns[i].sock, ctx->conns[i].mdns_ip.ss_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                            ctx->conns[i].mdns_ip.ss_family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
@@ -504,7 +507,8 @@ mdns_entries_send(const struct mdns_ctx *ctx, const struct mdns_hdr *hdr, const 
 
         for (size_t i = 0; i < ctx->nb_conns; ++i) {
             ssize_t r = sendto(ctx->conns[i].sock, (const char *) buf, l, 0,
-                    (const struct sockaddr *) &ctx->addr, ss_len(&ctx->addr));
+                    (const struct sockaddr *) &ctx->conns[i].mcast_addr,
+                               ss_len((struct sockaddr_storage*)&ctx->conns[i].mcast_addr));
             if (r < 0)
                 return (MDNS_NETERR);
         }

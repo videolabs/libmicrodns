@@ -404,20 +404,20 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
             if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].if_addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
-            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].intf_addr.ss_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+            if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
                            ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
                            (const void *) &ttl, sizeof(ttl)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
-            if (setsockopt(ctx->conns[i].sock, ctx->conns[i].intf_addr.ss_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+            if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
                            IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 
 #if defined(HAVE_GETIFADDRS) || defined(_WIN32)
             if (setsockopt(ctx->conns[i].sock,
-                           ctx->conns[i].intf_addr.ss_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
+                           ss_level(&ctx->conns[i].intf_addr),
                            ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_IF : IPV6_MULTICAST_IF,
                            (const void*)&ctx->conns[i].if_addr, sizeof(ctx->conns[i].if_addr))) {
                     return mdns_destroy(ctx), (MDNS_NETERR);

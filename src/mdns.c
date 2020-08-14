@@ -793,6 +793,8 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                                         goto again;
                                 }
                         }
+                        mdns_free(question);
+                        question = NULL;
                 }
 again:
                 mdns_free(question);

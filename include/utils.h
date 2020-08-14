@@ -51,6 +51,12 @@ static inline socklen_t ss_len(const struct sockaddr_storage *ss)
                                      : sizeof(struct sockaddr_in6));
 }
 
+static inline socklen_t sa_len(const struct sockaddr* sa)
+{
+    return sa->sa_family == AF_INET ? sizeof(struct sockaddr_in)
+                                    : sizeof(struct sockaddr_in6);
+}
+
 static inline uint8_t *write_u16(uint8_t *p, size_t *s, const uint16_t v)
 {
         *p++ = (v >> 8) & 0xFF;

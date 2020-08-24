@@ -340,7 +340,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 {
         const uint32_t on_off = 1;
         const uint32_t ttl = 255;
-        const uint8_t loop = 1;
+        const uint32_t loop = 1;
         int res;
 #ifdef _WIN32
         union {
@@ -406,7 +406,8 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
             }
 
             if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
-                           IP_MULTICAST_LOOP, (const void *) &loop, sizeof(loop)) < 0) {
+                           ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP,
+                           (const bool *) &loop, sizeof(loop)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
 

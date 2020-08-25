@@ -78,20 +78,8 @@ struct mdns_hdr {
         uint16_t num_add_rr;
 };
 
-struct mdns_ip {
-    unsigned int family;
-    union {
-        struct {
-            struct in_addr addr;
-        } ipv4;
-        struct {
-            struct in6_addr addr;
-        } ipv6;
-    };
-};
-
 typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
-typedef void (*mdns_announce_callback)(void*, int, const struct mdns_ip *, const struct rr_entry *);
+typedef void (*mdns_announce_callback)(void*, int, const struct sockaddr *, const struct rr_entry *);
 
 /**
  * \return true if the listener should be stopped

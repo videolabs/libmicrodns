@@ -105,7 +105,7 @@ typedef DWORD multicast_if;
 
 # if HAVE_IFADDRS_H
 #include <ifaddrs.h>
-typedef struct sockaddr_storage multicast_if;
+typedef uint32_t multicast_if;
 # else
 typedef void* multicast_if;
 # endif

@@ -108,10 +108,10 @@ int
 os_mcast_join(sock_t s, const struct sockaddr_storage *ss, multicast_if mintf)
 {
 #ifdef MCAST_JOIN_GROUP
-        (void)mintf;
         struct group_req mgroup;
 
         memset(&mgroup, 0, sizeof(mgroup));
+        mgroup.gr_interface = mintf;
         memcpy(&mgroup.gr_group, ss, ss_len(ss));
         if (setsockopt(s, ss_level(ss), MCAST_JOIN_GROUP,
             (const void *) &mgroup, sizeof(mgroup)) < 0)

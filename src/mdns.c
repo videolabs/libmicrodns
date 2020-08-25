@@ -79,7 +79,7 @@ extern void rr_free(struct rr_entry *);
 #if HAVE_GETIFADDRS
 
 static bool
-mdns_is_interface_valuable(const struct ifaddrs* ifa)
+mdns_is_interface_valuable(const struct ifaddrs* ifa, int family)
 {
     struct sockaddr_in6 saddr;
 
@@ -88,8 +88,7 @@ mdns_is_interface_valuable(const struct ifaddrs* ifa)
 
     memcpy(&saddr, ifa->ifa_addr, sizeof(saddr));
 
-    return (ifa->ifa_addr->sa_family == AF_INET ||
-            ifa->ifa_addr->sa_family == AF_INET6) &&
+    return ifa->ifa_addr->sa_family == family &&
             (ifa->ifa_flags & IFF_LOOPBACK) == 0 &&
             (ifa->ifa_flags & IFF_UP) != 0 &&
             (ifa->ifa_flags & IFF_RUNNING) != 0 &&
@@ -103,10 +102,7 @@ static size_t count_interfaces(const struct ifaddrs *ifs, int family)
     size_t nb_if = 0;
 
     for (const struct ifaddrs *c = ifs; c != NULL; c = c->ifa_next) {
-            if (c->ifa_addr == NULL ||
-                c->ifa_addr->sa_family != family ||
-                !mdns_is_interface_valuable(c))
-            {
+            if (!mdns_is_interface_valuable(c, family)) {
                     continue;
             }
             nb_if++;
@@ -146,9 +142,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 return (MDNS_ERROR);
         }
         for (c = ifs; c != NULL; c = c->ifa_next) {
-                if (c->ifa_addr == NULL ||
-                    c->ifa_addr->sa_family != ai_family ||
-                    !mdns_is_interface_valuable(c))
+                if (!mdns_is_interface_valuable(c, ai_family))
                         continue;
                 memcpy(intfs, c->ifa_addr, sizeof(*intfs));
                 memcpy(mdns_ips, c->ifa_addr, sa_len(c->ifa_addr));

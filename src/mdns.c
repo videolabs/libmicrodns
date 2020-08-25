@@ -359,12 +359,40 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 
         sprintf(buf, "%hu", port);
         memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
-        errno = getaddrinfo(addr, buf, &hints, &res);
-        if (errno != 0)
+
+        if (addr == NULL) {
+            hints.ai_family = AF_INET;
+            /* First, get the ipv4 multicast address info */
+            errno = getaddrinfo(MDNS_ADDR_IPV4, buf, &hints, &res);
+            if (errno != 0)
+                    return (MDNS_LKPERR);
+            /* Now get the ipv6 informations and link them with the ipv4 ones */
+            struct addrinfo *ipv6_res = NULL;
+            hints.ai_family = AF_INET6;
+            errno = getaddrinfo(MDNS_ADDR_IPV6, buf, &hints, &ipv6_res);
+            if (errno != 0) {
+                    freeaddrinfo(res);
+                    return (MDNS_LKPERR);
+            }
+            struct addrinfo* ipv4 = res;
+            for (; ipv4->ai_next != NULL; ipv4 = ipv4->ai_next)
+                ;
+            ipv4->ai_next = ipv6_res;
+        } else {
+            int family;
+            if (!strcmp(addr, MDNS_ADDR_IPV4))
+                family = AF_INET;
+            else if (!strcmp(addr, MDNS_ADDR_IPV6))
+                family = AF_INET6;
+            else
                 return (MDNS_LKPERR);
+            hints.ai_family = family;
+            errno = getaddrinfo(addr, buf, &hints, &res);
+            if (errno != 0)
+                    return (MDNS_LKPERR);
+        }
 
         status = mdns_list_interfaces(&ifaddrs, &mdns_ips, &ctx->nb_conns, &mcast_addrs, res);
         if ( status < 0) {

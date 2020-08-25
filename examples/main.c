@@ -77,7 +77,7 @@ int main(int i_argc, char *ppsz_argv[])
         }
         signal(SIGINT, &sighandler);
 
-        if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
+        if ((r = mdns_init(&ctx, NULL, MDNS_PORT)) < 0)
                 goto err;
         if ((r = mdns_listen(ctx, ppsz_names, i_nb_names, RR_PTR, 10, stop,
                              callback, NULL)) < 0)

@@ -90,7 +90,7 @@ typedef bool (*mdns_stop_func)(void*);
  * @brief Allocates and initialize a new mdns context
  *
  * @param ctx Returns the allocated context for the library [OUT]
- * @param addr Address to listen to
+ * @param addr Protocol specific address to listen to, or NULL to use both IPv4 and IPv6
  * @param port Port to listen on
  *
  * @see use mdns_destroy() to clean

@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         signal(SIGINT, sighandler);
         signal(SIGTERM, sighandler);
 
-        if ((r = mdns_init(&ctx, MDNS_ADDR_IPV4, MDNS_PORT)) < 0)
+        if ((r = mdns_init(&ctx, NULL, MDNS_PORT)) < 0)
                 goto err;
 
         // test with `ping mdnshost.local` after discovery (run ./test first)

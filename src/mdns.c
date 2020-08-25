@@ -92,8 +92,9 @@ mdns_is_interface_valuable(const struct ifaddrs* ifa, int family)
             (ifa->ifa_flags & IFF_LOOPBACK) == 0 &&
             (ifa->ifa_flags & IFF_UP) != 0 &&
             (ifa->ifa_flags & IFF_RUNNING) != 0 &&
-            ((ifa->ifa_addr->sa_family == AF_INET6 &&
-                    saddr.sin6_scope_id == 0) ||
+            /* We only want a link local address, especially since we then
+             * can get the associated interface index */
+            ((family == AF_INET6 && saddr.sin6_scope_id != 0) ||
                 ifa->ifa_addr->sa_family == AF_INET);
 }
 

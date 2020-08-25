@@ -97,21 +97,25 @@ mdns_is_interface_valuable(const struct ifaddrs* ifa, int family)
                 ifa->ifa_addr->sa_family == AF_INET);
 }
 
-static size_t count_interfaces(const struct ifaddrs *ifs, int family)
+static size_t count_interfaces(const struct ifaddrs *ifs,
+                               const struct addrinfo* addrs)
 {
     size_t nb_if = 0;
 
-    for (const struct ifaddrs *c = ifs; c != NULL; c = c->ifa_next) {
-            if (!mdns_is_interface_valuable(c, family)) {
-                    continue;
+    for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+            for (const struct ifaddrs *c = ifs; c != NULL; c = c->ifa_next) {
+                    if (!mdns_is_interface_valuable(c, addr->ai_family)) {
+                            continue;
+                    }
+                    nb_if++;
             }
-            nb_if++;
     }
     return nb_if;
 }
 
 static int
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
+mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
+                     size_t* p_nb_intf, const struct addrinfo* addrs)
 {
         struct ifaddrs *ifs;
         struct sockaddr_storage *mdns_ips;
@@ -123,7 +127,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
         if (getifaddrs(&ifs) || ifs == NULL)
                 return (MDNS_NETERR);
 
-        nb_if = count_interfaces(ifs, ai_family);
+        nb_if = count_interfaces(ifs, addrs);
 
         if (nb_if == 0) {
                 freeifaddrs(ifs);
@@ -141,13 +145,15 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 freeifaddrs(ifs);
                 return (MDNS_ERROR);
         }
-        for (c = ifs; c != NULL; c = c->ifa_next) {
-                if (!mdns_is_interface_valuable(c, ai_family))
-                        continue;
-                memcpy(intfs, c->ifa_addr, sizeof(*intfs));
-                memcpy(mdns_ips, c->ifa_addr, sa_len(c->ifa_addr));
-                mdns_ips++;
-                intfs++;
+        for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+                for (c = ifs; c != NULL; c = c->ifa_next) {
+                        if (!mdns_is_interface_valuable(c, addr->ai_family))
+                                continue;
+                        memcpy(intfs, c->ifa_addr, sizeof(*intfs));
+                        memcpy(mdns_ips, c->ifa_addr, sa_len(c->ifa_addr));
+                        mdns_ips++;
+                        intfs++;
+                }
         }
         freeifaddrs(ifs);
         *p_nb_intf = nb_if;
@@ -178,14 +184,17 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
 #else // _WIN32
 
 static bool
-mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf)
+mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf, int family)
 {
     return (intf->IfType == IF_TYPE_IEEE80211 || intf->IfType == IF_TYPE_ETHERNET_CSMACD) &&
-            intf->OperStatus == IfOperStatusUp;
+            intf->OperStatus == IfOperStatusUp &&
+            ((family == AF_INET && intf->Ipv4Enabled) ||
+            (family == AF_INET6 && intf->Ipv6Enabled));
 }
 
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
+mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf,
+                     const struct addrinfo* addrs)
 {
         multicast_if* intfs;
         struct sockaddr_storage *mdns_ips;
@@ -211,7 +220,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 res = malloc( size );
                 if (res == NULL)
                         return (MDNS_ERROR);
-                hr = GetAdaptersAddresses(ai_family, GAA_FLAG_SKIP_ANYCAST |
+                hr = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST |
                                                     GAA_FLAG_SKIP_DNS_SERVER,
                                                     NULL, res, &size);
         } while (hr == ERROR_BUFFER_OVERFLOW);
@@ -220,10 +229,12 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 return (MDNS_NETERR);
         }
 
-        for (current = res; current != NULL; current = current->Next) {
-                if (!mdns_is_interface_valuable(current))
-                        continue;
-                ++nb_intf;
+        for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+                for (current = res; current != NULL; current = current->Next) {
+                        if (!mdns_is_interface_valuable(current, addr->ai_family))
+                                continue;
+                        ++nb_intf;
+                }
         }
         if (nb_intf == 0) {
                 // Fallback to the default interface
@@ -255,36 +266,38 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 free(res);
                 return (MDNS_ERROR);
         }
-        for (current = res; current != NULL; current = current->Next) {
-                if (!mdns_is_interface_valuable(current))
-                        continue;
-                if (ai_family == AF_INET6) {
-                        // For IPv6, The input value for setting IPV6_MULTICAST_IF is the
-                        // interface index of the desired outgoing interface in *host byte order*.
-                        // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ipv6-socket-options
-                        *intfs = current->Ipv6IfIndex;
-                }
-                else {
-                        // For IPv4, The input value for setting IP_MULTICAST_IF is the
-                        // interface index of the desired outgoing interface in *network byte order*.
-                        // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
-                        *intfs = htonl(current->IfIndex);
-                }
-                PIP_ADAPTER_UNICAST_ADDRESS p_unicast = current->FirstUnicastAddress;
-                if( p_unicast )
-                {
-                        // Take the first unicast address (highest priority)
-                        if (ai_family == AF_INET) {
+        for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+            for (current = res; current != NULL; current = current->Next) {
+                    if (!mdns_is_interface_valuable(current, addr->ai_family))
+                            continue;
+                    if (addr->ai_family == AF_INET6) {
+                            // For IPv6, The input value for setting IPV6_MULTICAST_IF is the
+                            // interface index of the desired outgoing interface in *host byte order*.
+                            // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ipv6-socket-options
+                            *intfs = current->Ipv6IfIndex;
+                    }
+                    else {
+                            // For IPv4, The input value for setting IP_MULTICAST_IF is the
+                            // interface index of the desired outgoing interface in *network byte order*.
+                            // See https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
+                            *intfs = htonl(current->IfIndex);
+                    }
+                    PIP_ADAPTER_UNICAST_ADDRESS p_unicast = current->FirstUnicastAddress;
+                    if( p_unicast )
+                    {
+                            // Take the first unicast address (highest priority)
+                            if (addr->ai_family == AF_INET) {
+                                    memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
+                                           sizeof(struct sockaddr_in));
+                            }
+                            else {
                                 memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
-                                       sizeof(struct sockaddr_in));
-                        }
-                        else {
-                            memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
-                                   sizeof(struct sockaddr_in6));
-                        }
-                }
-                ++mdns_ips;
-                ++intfs;
+                                       sizeof(struct sockaddr_in6));
+                            }
+                    }
+                    ++mdns_ips;
+                    ++intfs;
+            }
         }
         *p_nb_intf = nb_intf;
         free(res);
@@ -311,7 +324,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         if (errno != 0)
                 return (MDNS_LKPERR);
 
-        status = mdns_list_interfaces(&ifaddrs, &mdns_ips, &ctx->nb_conns, res->ai_family);
+        status = mdns_list_interfaces(&ifaddrs, &mdns_ips, &ctx->nb_conns, res);
         if ( status < 0) {
                 freeaddrinfo(res);
                 return (status);

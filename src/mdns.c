@@ -375,7 +375,6 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                 return mdns_destroy(ctx), (res);
 
         for (size_t i = 0; i < ctx->nb_conns; ++i ) {
-                struct sockaddr* sa_addr = (struct sockaddr*)&ctx->conns[i].mcast_addr;
                 struct sockaddr_storage* ss_addr = (struct sockaddr_storage*)&ctx->conns[i].mcast_addr;
                 if ((ctx->conns[i].sock = socket(ctx->conns[i].mdns_ip.ss_family, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
                         return mdns_destroy(ctx), (MDNS_NETERR);
@@ -396,8 +395,11 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
             if (bind(ctx->conns[i].sock, (const struct sockaddr *) &dumb, ss_len(&dumb.ss)) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 #else /* _WIN32 */
-            if (bind(ctx->conns[i].sock, sa_addr, ss_len(ss_addr)) < 0)
+            if (bind(ctx->conns[i].sock, (struct sockaddr*)&ctx->conns[i].mdns_ip,
+                     ss_len(&ctx->conns[i].mdns_ip)) < 0)
+            {
                     return mdns_destroy(ctx), (MDNS_NETERR);
+            }
 #endif /* _WIN32 */
 
             if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].if_addr) < 0)

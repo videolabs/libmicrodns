@@ -42,7 +42,7 @@ static bool stop(void *cbarg)
         return (sigflag ? true : false);
 }
 
-static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const struct rr_entry *entry)
+static void callback(void *cbarg, int r, const struct sockaddr *mdns_ip, const struct rr_entry *entry)
 {
         if (entry != NULL && entry->type != RR_PTR)
         {
@@ -89,16 +89,18 @@ static void callback(void *cbarg, int r, const struct mdns_ip *mdns_ip, const st
        
         // RR_A/AAAA: link .local domain to IP address
         answers[3].name     = domain_name;
-        if (mdns_ip->family == AF_INET)
+        if (mdns_ip->sa_family == AF_INET)
         {
                 answers[3].type     = RR_A;
-                memcpy(&answers[3].data.A.addr, &mdns_ip->ipv4, 
+                memcpy(&answers[3].data.A.addr,
+                        &((struct sockaddr_in*)mdns_ip)->sin_addr,
                         sizeof(answers[3].data.A.addr));
         }
         else
         {
                 answers[3].type     = RR_AAAA;
-                memcpy(&answers[3].data.AAAA.addr, &mdns_ip->ipv6, 
+                memcpy(&answers[3].data.AAAA.addr,
+                        &((struct sockaddr_in6*)mdns_ip)->sin6_addr,
                         sizeof(answers[3].data.AAAA.addr));
         }
         if ( entry == NULL )

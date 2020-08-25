@@ -140,18 +140,11 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct mdns_ip **pp_mdns_ips, size
                     !mdns_is_interface_valuable(c))
                         continue;
                 memcpy(intfs, c->ifa_addr, sizeof(*intfs));
-                mdns_ips->family = c->ifa_addr->sa_family;
-                if (ai_family == AF_INET) {
-                        struct sockaddr_in saddr;
-
-                        memcpy(&saddr, c->ifa_addr, sizeof(saddr));
-                        memcpy(&(*mdns_ips).ipv4.addr, &saddr.sin_addr, sizeof(struct in_addr));
+                if (c->ifa_addr->sa_family == AF_INET) {
+                        memcpy(mdns_ips, c->ifa_addr, sizeof(struct sockaddr_in));
                 }
                 else {
-                        struct sockaddr_in6 saddr;
-
-                        memcpy(&saddr, c->ifa_addr, sizeof(saddr));
-                        memcpy(&(*mdns_ips).ipv6.addr, &saddr.sin6_addr, sizeof(struct in6_addr));
+                        memcpy(mdns_ips, c->ifa_addr, sizeof(struct sockaddr_in6));
                 }
                 mdns_ips++;
                 intfs++;

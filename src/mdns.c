@@ -116,11 +116,13 @@ static size_t count_interfaces(const struct ifaddrs *ifs,
 
 static int
 mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
-                     size_t* p_nb_intf, const struct addrinfo* addrs)
+                     size_t* p_nb_intf, struct sockaddr_storage **pp_mcast_addrs,
+                     const struct addrinfo* addrs)
 {
         struct ifaddrs *ifs;
         struct sockaddr_storage *mdns_ips;
         struct ifaddrs *c;
+        struct sockaddr_storage *mcast_addrs;
         size_t nb_if;
         multicast_if* intfs;
 
@@ -146,6 +148,15 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 freeifaddrs(ifs);
                 return (MDNS_ERROR);
         }
+        *pp_mcast_addrs = mcast_addrs = malloc(sizeof(*mcast_addrs) * nb_if);
+        if (mcast_addrs == NULL) {
+                free(mdns_ips);
+                free(intfs);
+                *pp_intfs = NULL;
+                *pp_mdns_ips = NULL;
+                freeifaddrs(ifs);
+                return (MDNS_ERROR);
+        }
         for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
                 for (c = ifs; c != NULL; c = c->ifa_next) {
                         if (!mdns_is_interface_valuable(c, addr->ai_family))
@@ -157,8 +168,10 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                                        sizeof(*intfs));
                         }
                         memcpy(mdns_ips, c->ifa_addr, sa_len(c->ifa_addr));
+                        memcpy(mcast_addrs, addr->ai_addr, sa_len(addr->ai_addr));
                         mdns_ips++;
                         intfs++;
+                        mcast_addrs++;
                 }
         }
         freeifaddrs(ifs);
@@ -199,11 +212,13 @@ mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf, int family)
 }
 
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf,
+mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
+                     size_t* p_nb_intf, struct sockaddr_storage **pp_mcast_addrs,
                      const struct addrinfo* addrs)
 {
         multicast_if* intfs;
         struct sockaddr_storage *mdns_ips;
+        struct sockaddr_storage *mcast_addrs;
         IP_ADAPTER_ADDRESSES *res = NULL, *current;
         ULONG size;
         HRESULT hr;
@@ -257,6 +272,14 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                         return (MDNS_ERROR);
                 }
                 memset(mdns_ips, 0, sizeof(*mdns_ips));
+                *pp_mcast_addrs = mcast_addrs = malloc(sizeof(*mcast_addrs));
+                if (mcast_addrs == NULL) {
+                        free(mdns_ips);
+                        free(*pp_intfs);
+                        free(res);
+                        return (MDNS_ERROR);
+                }
+                memcpy(mcast_addrs, addrs->ai_addr, sa_len(addrs->ai_addr));
                 *p_nb_intf = 1;
                 return (0);
         }
@@ -272,6 +295,13 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                 free(res);
                 return (MDNS_ERROR);
         }
+        *pp_mcast_addrs = mcast_addrs = malloc(sizeof(*mcast_addrs) * nb_intf);
+        if (mcast_addrs == NULL) {
+                free(mdns_ips);
+                free(intfs);
+                free(res);
+                return (MDNS_ERROR);
+        }
         for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
             for (current = res; current != NULL; current = current->Next) {
                     if (!mdns_is_interface_valuable(current, addr->ai_family))
@@ -282,6 +312,8 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                     else {
                             *intfs = current->IfIndex;
                     }
+                    memcpy(mcast_addrs, addr->ai_addr, sa_len(addr->ai_addr));
+
                     PIP_ADAPTER_UNICAST_ADDRESS p_unicast = current->FirstUnicastAddress;
                     if( p_unicast )
                     {
@@ -297,6 +329,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                     }
                     ++mdns_ips;
                     ++intfs;
+                    ++mcast_addrs;
             }
         }
         *p_nb_intf = nb_intf;
@@ -312,6 +345,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         struct addrinfo hints, *res = NULL;
         multicast_if* ifaddrs = NULL;
         struct sockaddr_storage *mdns_ips = NULL;
+        struct sockaddr_storage *mcast_addrs = NULL;
         size_t i;
         int status;
 
@@ -324,7 +358,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         if (errno != 0)
                 return (MDNS_LKPERR);
 
-        status = mdns_list_interfaces(&ifaddrs, &mdns_ips, &ctx->nb_conns, res);
+        status = mdns_list_interfaces(&ifaddrs, &mdns_ips, &ctx->nb_conns, &mcast_addrs, res);
         if ( status < 0) {
                 freeaddrinfo(res);
                 return (status);
@@ -338,15 +372,16 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 free(ifaddrs);
                 free(mdns_ips);
                 freeaddrinfo(res);
+                free(mcast_addrs);
                 return (MDNS_ERROR);
         }
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;
                 ctx->conns[i].if_addr = ifaddrs[i];
                 ctx->conns[i].intf_addr = mdns_ips[i];
-                memcpy(&ctx->conns[i].mcast_addr, res->ai_addr,
-                       sa_len(res->ai_addr));
+                ctx->conns[i].mcast_addr = mcast_addrs[i];
         }
+        free(mcast_addrs);
         free(ifaddrs);
         free(mdns_ips);
         freeaddrinfo(res);

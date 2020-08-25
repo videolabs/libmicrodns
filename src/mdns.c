@@ -79,7 +79,7 @@ extern void rr_free(struct rr_entry *);
 #if HAVE_GETIFADDRS
 
 static bool
-mdns_is_interface_valuable(struct ifaddrs* ifa)
+mdns_is_interface_valuable(const struct ifaddrs* ifa)
 {
     struct sockaddr_in6 saddr;
 

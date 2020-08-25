@@ -98,6 +98,22 @@ mdns_is_interface_valuable(const struct ifaddrs* ifa)
                 ifa->ifa_addr->sa_family == AF_INET);
 }
 
+static size_t count_interfaces(const struct ifaddrs *ifs, int family)
+{
+    size_t nb_if = 0;
+
+    for (const struct ifaddrs *c = ifs; c != NULL; c = c->ifa_next) {
+            if (c->ifa_addr == NULL ||
+                c->ifa_addr->sa_family != family ||
+                !mdns_is_interface_valuable(c))
+            {
+                    continue;
+            }
+            nb_if++;
+    }
+    return nb_if;
+}
+
 static int
 mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
 {
@@ -110,14 +126,9 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
         *p_nb_intf = 0;
         if (getifaddrs(&ifs) || ifs == NULL)
                 return (MDNS_NETERR);
-        nb_if = 0;
-        for (c = ifs; c != NULL; c = c->ifa_next) {
-                if (c->ifa_addr == NULL ||
-                    c->ifa_addr->sa_family != ai_family ||
-                    !mdns_is_interface_valuable(c))
-                        continue;
-                nb_if++;
-        }
+
+        nb_if = count_interfaces(ifs, ai_family);
+
         if (nb_if == 0) {
                 freeifaddrs(ifs);
                 return (MDNS_ERROR);

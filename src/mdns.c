@@ -321,13 +321,19 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
                             return (MDNS_ERROR);
                     }
                     // Take the first unicast address (highest priority)
-                    if (addr->ai_family == AF_INET) {
-                            memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
-                                sizeof(struct sockaddr_in));
-                    }
-                    else {
-                            memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
-                                sizeof(struct sockaddr_in6));
+                    for (; p_unicast != NULL; p_unicast = p_unicast->Next) {
+                            if (p_unicast->Address.lpSockaddr->sa_family != addr->ai_family) {
+                                    continue;
+                            }
+
+                            if (addr->ai_family == AF_INET) {
+                                memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
+                                    sizeof(struct sockaddr_in));
+                            }
+                            else {
+                                    memcpy(mdns_ips, p_unicast->Address.lpSockaddr,
+                                        sizeof(struct sockaddr_in6));
+                            }
                     }
                     ++mdns_ips;
                     ++intfs;

@@ -78,13 +78,21 @@ struct mdns_hdr {
         uint16_t num_add_rr;
 };
 
+enum mdns_announce_type {
+    MDNS_ANNOUNCE_INITIAL,  // An initial announce needs to be sent
+    MDNS_ANNOUNCE_RESPONSE, // The application needs to respond to an MDNS question
+    MDNS_ANNOUNCE_GOODBYE,  // A goodbye packet needs to be sent
+};
+
 typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
+
 /**
  * @brief mdns_announce_callback Will be invoked for each received question
  *
  * @param cookie The pointer provided as last parameter to mdns_serve
  * @param addr The address for which a probe was received
- * @param service The service being probed
+ * @param service The service being probed or NULL when an initial discovery is requested
+ * @param type The type of announce that's expected from the application
  *
  * It is the application responsibility to filter which service it should respond
  * to.
@@ -93,10 +101,15 @@ typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
  * network interface, this callback might be invoked multiple times for the same
  * service, so that the application can announce itself as it sees fit (for
  * instance it can announce both an A and AAAA records)
+ * This callback will also be invoked with a non-NULL service and
+ * MDNS_ANNOUNCE_INITIAL if the requests it through mdns_request_initial_announce
+ * In this case the application is responsible for knowing which service needs
+ * to be announced and announce it accordingly.
  */
 typedef void (*mdns_announce_callback)(void* cookie,
                                        const struct sockaddr *addr,
-                                       const char* service);
+                                       const char* service,
+                                       enum mdns_announce_type type );
 
 /**
  * \return true if the listener should be stopped
@@ -199,6 +212,13 @@ MDNS_EXPORT int mdns_announce(struct mdns_ctx *ctx, enum rr_type type,
  */
 
 MDNS_EXPORT int mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie);
+
+/**
+ * @brief mdns_request_initial_announce Request an initial announce for the provided service
+ * @param ctx A mdns context created by mdns_init()
+ * @param service
+ */
+MDNS_EXPORT void mdns_request_initial_announce(struct mdns_ctx *ctx, const char* service);
 
 # ifdef __cplusplus
 }

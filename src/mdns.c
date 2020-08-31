@@ -808,6 +808,19 @@ mdns_announce(struct mdns_ctx *ctx, enum rr_type type,
         return (0);
 }
 
+void
+mdns_request_initial_announce(struct mdns_ctx *ctx, const char* service)
+{
+    /* Send the initial announce (RFC 6762 §8.3) */
+    for (struct mdns_svc* svc = ctx->services; svc; svc = svc->next) {
+        for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
+            svc->announce_callback(svc->p_cookie,
+                                   (struct sockaddr*)&ctx->conns[i].intf_addr,
+                                   service, MDNS_ANNOUNCE_INITIAL);
+        }
+    }
+}
+
 int
 mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
 {
@@ -825,7 +838,8 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
         for (svc = ctx->services; svc; svc = svc->next) {
             for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
                 svc->announce_callback(svc->p_cookie,
-                                       (struct sockaddr*)&ctx->conns[i].intf_addr, NULL);
+                                       (struct sockaddr*)&ctx->conns[i].intf_addr,
+                                       NULL, MDNS_ANNOUNCE_INITIAL);
             }
         }
 
@@ -852,7 +866,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                                 if (question->type == svc->type) {
                                         svc->announce_callback(svc->p_cookie,
                                                (struct sockaddr*)&ctx->conns[i].intf_addr,
-                                               question->name);
+                                               question->name, MDNS_ANNOUNCE_RESPONSE);
                                         goto again;
                                 }
                         }
@@ -862,6 +876,14 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
 again:
                 mdns_free(question);
                 question = NULL;
+        }
+        /* Send the goodbye packets (RFC 6762 §10.1) */
+        for (svc = ctx->services; svc; svc = svc->next) {
+            for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
+                svc->announce_callback(svc->p_cookie,
+                                       (struct sockaddr*)&ctx->conns[i].intf_addr, NULL,
+                                       MDNS_ANNOUNCE_GOODBYE);
+            }
         }
         return (0);
 }

@@ -42,7 +42,8 @@ static bool stop(void *cbarg)
         return (sigflag ? true : false);
 }
 
-static void callback(void *cbarg, const struct sockaddr *mdns_ip, const char* service)
+static void callback(void *cbarg, const struct sockaddr *mdns_ip,
+                     const char* service, bool goodbye)
 {
         if ( service != NULL && strcmp( service, "_googlecast._tcp.local" ) )
             return;
@@ -56,7 +57,7 @@ static void callback(void *cbarg, const struct sockaddr *mdns_ip, const char* se
         {
                 
                 answers[i].rr_class = RR_IN;
-                answers[i].ttl      = 120;
+                answers[i].ttl      = goodbye ? 0 : 120;
 
                 if (i + 1 < hdr.num_ans_rr)
                         answers[i].next = &answers[i + 1];

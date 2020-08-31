@@ -42,13 +42,10 @@ static bool stop(void *cbarg)
         return (sigflag ? true : false);
 }
 
-static void callback(void *cbarg, int r, const struct sockaddr *mdns_ip, const struct rr_entry *entry)
+static void callback(void *cbarg, int r, const struct sockaddr *mdns_ip, const char* service)
 {
-        if (entry != NULL && entry->type != RR_PTR)
-        {
-                printf("Unsupported request type: %d\n", entry->type);
-                return;
-        }
+        if ( service != NULL && strcmp( service, "_googlecast._tcp.local" ) )
+            return;
         struct mdns_ctx *ctx = (struct mdns_ctx *) cbarg;
         struct mdns_hdr hdr = {0};
         struct rr_entry answers[4] = {{0}}; // A/AAAA, SRV, TXT, PTR
@@ -103,7 +100,7 @@ static void callback(void *cbarg, int r, const struct sockaddr *mdns_ip, const s
                         &((struct sockaddr_in6*)mdns_ip)->sin6_addr,
                         sizeof(answers[3].data.AAAA.addr));
         }
-        if ( entry == NULL )
+        if ( service == NULL )
         {
             /* Send the initial probe */
             hdr.num_qn = hdr.num_ans_rr;
@@ -132,7 +129,7 @@ int main(int argc, char *argv[])
 
         // test with `ping mdnshost.local` after discovery (run ./test first)
         // NB: a zeroconf service (eg Avahi) must be running for ping to work
-        mdns_announce(ctx, "_googlecast._tcp.local", RR_PTR, callback, ctx);
+        mdns_announce(ctx, RR_PTR, callback, ctx);
 
         if ((r = mdns_serve(ctx, stop, NULL)) < 0)
                 goto err;

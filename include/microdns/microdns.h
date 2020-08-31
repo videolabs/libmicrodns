@@ -79,7 +79,25 @@ struct mdns_hdr {
 };
 
 typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
-typedef void (*mdns_announce_callback)(void*, int, const struct sockaddr *, const struct rr_entry *);
+/**
+ * @brief mdns_announce_callback Will be invoked for each received question
+ *
+ * @param cookie The pointer provided as last parameter to mdns_serve
+ * @param r The mdns_recv result
+ * @param addr The address for which a probe was received
+ * @param service The service being probed
+ *
+ * It is the application responsibility to filter which service it should respond
+ * to.
+ * This callback will be invoked with a NULL service upon startup so that the
+ * application can send a unsolicited announce. If there are more than a single
+ * network interface, this callback might be invoked multiple times for the same
+ * service, so that the application can announce itself as it sees fit (for
+ * instance it can announce both an A and AAAA records)
+ */
+typedef void (*mdns_announce_callback)(void* cookie, int r,
+                                       const struct sockaddr *addr,
+                                       const char* service);
 
 /**
  * \return true if the listener should be stopped
@@ -161,14 +179,13 @@ MDNS_EXPORT int mdns_listen(const struct mdns_ctx *ctx, const char *const names[
  * @brief Announce a new name to serve
  *
  * @param ctx A mdns context created by mdns_init()
- * @param service The name of the services you want to announce
  * @param type The type of Record you want \see rr_type
  * @param callback The callback function to send the entries
  * @param p_cookie user data for the callback
  *
  * @return 0 if success, negative in other cases
  */
-MDNS_EXPORT int mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
+MDNS_EXPORT int mdns_announce(struct mdns_ctx *ctx, enum rr_type type,
         mdns_announce_callback callback, void *p_cookie);
 
 /**

@@ -824,7 +824,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
         /* Send the initial announce (RFC 6762 §8.3) */
         for (svc = ctx->services; svc; svc = svc->next) {
             for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
-                svc->announce_callback(svc->p_cookie, 0,
+                svc->announce_callback(svc->p_cookie,
                                        (struct sockaddr*)&ctx->conns[i].intf_addr, NULL);
             }
         }
@@ -850,7 +850,7 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
 
                         for (svc = ctx->services; svc; svc = svc->next) {
                                 if (question->type == svc->type) {
-                                        svc->announce_callback(svc->p_cookie, r,
+                                        svc->announce_callback(svc->p_cookie,
                                                (struct sockaddr*)&ctx->conns[i].intf_addr,
                                                question->name);
                                         goto again;

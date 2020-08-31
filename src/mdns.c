@@ -42,7 +42,6 @@
 #define MDNS_PKT_MAXSZ 4096 // read/write buffer size
 
 struct mdns_svc {
-        char *name;
         enum rr_type type;
         union
         {
@@ -511,7 +510,6 @@ mdns_destroy(struct mdns_ctx *ctx)
 
                         while ((svc = ctx->services)) {
                                 ctx->services = ctx->services->next;
-                                if (svc->name) free(svc->name);
                                 free(svc);
                         }
                 }
@@ -791,7 +789,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
 }
 
 int
-mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
+mdns_announce(struct mdns_ctx *ctx, enum rr_type type,
         mdns_announce_callback callback, void *p_cookie)
 {
         if (!callback)
@@ -801,7 +799,6 @@ mdns_announce(struct mdns_ctx *ctx, const char *service, enum rr_type type,
         if (!svc)
                 return (MDNS_ERROR);
 
-        svc->name = strdup(service);
         svc->type = type;
         svc->announce_callback = callback;
         svc->p_cookie = p_cookie;
@@ -852,10 +849,10 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
                                 goto again;
 
                         for (svc = ctx->services; svc; svc = svc->next) {
-                                if (!strrcmp(question->name, svc->name) && question->type == svc->type) {
+                                if (question->type == svc->type) {
                                         svc->announce_callback(svc->p_cookie, r,
                                                (struct sockaddr*)&ctx->conns[i].intf_addr,
-                                               question);
+                                               question->name);
                                         goto again;
                                 }
                         }

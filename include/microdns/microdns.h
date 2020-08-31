@@ -83,7 +83,6 @@ typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
  * @brief mdns_announce_callback Will be invoked for each received question
  *
  * @param cookie The pointer provided as last parameter to mdns_serve
- * @param r The mdns_recv result
  * @param addr The address for which a probe was received
  * @param service The service being probed
  *
@@ -95,7 +94,7 @@ typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
  * service, so that the application can announce itself as it sees fit (for
  * instance it can announce both an A and AAAA records)
  */
-typedef void (*mdns_announce_callback)(void* cookie, int r,
+typedef void (*mdns_announce_callback)(void* cookie,
                                        const struct sockaddr *addr,
                                        const char* service);
 

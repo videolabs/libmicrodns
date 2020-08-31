@@ -42,7 +42,7 @@ static bool stop(void *cbarg)
         return (sigflag ? true : false);
 }
 
-static void callback(void *cbarg, int r, const struct sockaddr *mdns_ip, const char* service)
+static void callback(void *cbarg, const struct sockaddr *mdns_ip, const char* service)
 {
         if ( service != NULL && strcmp( service, "_googlecast._tcp.local" ) )
             return;

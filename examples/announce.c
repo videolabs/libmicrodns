@@ -43,7 +43,7 @@ static bool stop(void *cbarg)
 }
 
 static void callback(void *cbarg, const struct sockaddr *mdns_ip,
-                     const char* service, bool goodbye)
+                     const char* service, enum mdns_announce_type type)
 {
         if ( service != NULL && strcmp( service, "_googlecast._tcp.local" ) )
             return;
@@ -57,7 +57,7 @@ static void callback(void *cbarg, const struct sockaddr *mdns_ip,
         {
                 
                 answers[i].rr_class = RR_IN;
-                answers[i].ttl      = goodbye ? 0 : 120;
+                answers[i].ttl      = type == MDNS_ANNOUNCE_GOODBYE ? 0 : 120;
 
                 if (i + 1 < hdr.num_ans_rr)
                         answers[i].next = &answers[i + 1];

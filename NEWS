@@ -1,4 +1,11 @@
 -----------------
+libmicrodns 0.1.3
+-----------------
+ * Fix IPv6 support
+ * Add support for dual IP stack
+ * Fix invalid 0-length packet payload
+
+-----------------
 libmicrodns 0.1.2
 -----------------
  * Fixes to the new meson buildsystem

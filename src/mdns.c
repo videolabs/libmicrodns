@@ -54,7 +54,7 @@ struct mdns_svc {
 
 struct mdns_conn {
         sock_t sock;
-        multicast_if if_addr;  // NB: In Windows this is the interface index
+        multicast_if intf_idx;
         struct sockaddr_storage intf_addr;  // IP address and family of the interface
         struct sockaddr_storage mcast_addr; // The multicast address targeted by this connection
 };
@@ -412,7 +412,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
         }
         for (i = 0; i < ctx->nb_conns; ++i ) {
                 ctx->conns[i].sock = INVALID_SOCKET;
-                ctx->conns[i].if_addr = ifaddrs[i];
+                ctx->conns[i].intf_idx = ifaddrs[i];
                 ctx->conns[i].intf_addr = mdns_ips[i];
                 ctx->conns[i].mcast_addr = mcast_addrs[i];
         }
@@ -475,7 +475,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                      ss_len(&dumb.ss)) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 
-            if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].if_addr) < 0)
+            if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].intf_idx) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
                            ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,

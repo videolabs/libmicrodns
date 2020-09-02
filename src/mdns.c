@@ -486,7 +486,7 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
 
             if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
                            ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_LOOP : IPV6_MULTICAST_LOOP,
-                           (const bool *) &loop, sizeof(loop)) < 0) {
+                           (const void *) &loop, sizeof(loop)) < 0) {
                     return mdns_destroy(ctx), (MDNS_NETERR);
             }
         }

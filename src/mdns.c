@@ -179,22 +179,56 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
 }
 #else
 static size_t
-mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
+mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
+                     size_t* p_nb_intf, struct sockaddr_storage **pp_mcast_addrs,
+                     const struct addrinfo* addrs)
 {
-        uint32_t *intfs;
         struct sockaddr_storage *mdns_ips;
-        *pp_intfs = intfs = malloc(sizeof(*intfs));
+        uint32_t *intfs;
+        size_t nb_intfs = 0;
+        for( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+                if( addr->ai_family == AF_INET || addr->ai_family == AF_INET6 )
+                    ++nb_intfs;
+        }
+        *pp_intfs = intfs = malloc( nb_intfs * sizeof(*intfs) );
         if (intfs == NULL)
                 return (MDNS_ERROR);
-        memset(intfs, 0, sizeof(*intfs));
-        *pp_mdns_ips = mdns_ips = malloc(sizeof(*mdns_ips));
+        *pp_mdns_ips = mdns_ips = malloc( nb_intfs * sizeof(*mdns_ips) );
         if (mdns_ips == NULL) {
                 free(intfs);
                 *pp_intfs = NULL;
                 return (MDNS_ERROR);
         }
-        memset(mdns_ips, 0, sizeof(*mdns_ips));
-        *p_nb_intf = 1;
+
+        struct sockaddr_storage* mcast_addrs;
+        mcast_addrs = *pp_mcast_addrs = malloc( nb_intfs * sizeof( *mcast_addrs ) );
+        if( mcast_addrs == NULL ) {
+            free(mdns_ips);
+            free(intfs);
+            *pp_intfs = NULL;
+            *pp_mdns_ips = NULL;
+            return (MDNS_ERROR);
+        }
+        for( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
+                if( addr->ai_family == AF_INET || addr->ai_family == AF_INET6 ) {
+                        *intfs = 0;
+                        /* Take a shortcut assuming when we are in this case, we
+                         * can use MCAST_JOIN_GROUP. Otherwise, we need the
+                         * adapter IP address, which without getifaddrs is a pain
+                         * in the lower back to fetch
+                         */
+#ifndef MCAST_JOIN_GROUP
+# error We need the adapter address
+#endif
+                        mdns_ips->ss_family = addr->ai_family;
+                        memcpy(mcast_addrs, addr->ai_addr, sa_len(addr->ai_addr));
+                        intfs++;
+                        mdns_ips++;
+                        mcast_addrs++;
+                }
+        }
+
+        *p_nb_intf = nb_intfs;
         return (0);
 }
 #endif // HAVE_GETIFADDRS

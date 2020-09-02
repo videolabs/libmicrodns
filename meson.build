@@ -30,7 +30,7 @@ project('microdns', ['c'],
                      'b_ndebug=if-release'])
 
 mdns_version = meson.project_version()
-mdns_soname_version = '0.1.0'
+mdns_soname_version = '1.0.0'
 
 ver_arr = mdns_soname_version.split('.')
 mdns_major_version = ver_arr[0]

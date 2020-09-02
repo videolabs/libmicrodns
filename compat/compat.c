@@ -105,9 +105,11 @@ os_strerror(int errnum, char *buf, size_t buflen)
 }
 
 int
-os_mcast_join(sock_t s, const struct sockaddr_storage *ss, uint32_t intf_idx)
+os_mcast_join(sock_t s, const struct sockaddr_storage *ss, uint32_t intf_idx,
+              const struct sockaddr_storage* intf_addr)
 {
 #ifdef MCAST_JOIN_GROUP
+        (void)intf_addr;
         struct group_req mgroup;
 
         memset(&mgroup, 0, sizeof(mgroup));
@@ -127,9 +129,10 @@ os_mcast_join(sock_t s, const struct sockaddr_storage *ss, uint32_t intf_idx)
         switch (ss_family(ss)) {
                 case AF_INET: {
                         struct ip_mreq mreq;
+                        const struct sockaddr_in* sin = (const struct sockaddr_in*)intf_addr;
 
                         memcpy(&mreq.imr_multiaddr.s_addr, &u.sin.sin_addr, sizeof(struct in_addr));
-                        memcpy(&mreq.imr_interface, &intf_idx, sizeof(intf_idx));
+                        memcpy(&mreq.imr_interface, &sin->sin_addr, sizeof(sin->sin_addr));
                         if (setsockopt(s, ss_level(ss), IP_ADD_MEMBERSHIP,
                             (const void *) &mreq, sizeof(mreq)) < 0)
                                 return (-1);

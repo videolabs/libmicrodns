@@ -475,7 +475,8 @@ mdns_init(struct mdns_ctx **p_ctx, const char *addr, unsigned short port)
                      ss_len(&dumb.ss)) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
 
-            if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].intf_idx) < 0)
+            if (os_mcast_join(ctx->conns[i].sock, ss_addr, ctx->conns[i].intf_idx,
+                              &ctx->conns[i].intf_addr) < 0)
                     return mdns_destroy(ctx), (MDNS_NETERR);
             if (setsockopt(ctx->conns[i].sock, ss_level(&ctx->conns[i].intf_addr),
                            ctx->conns[i].intf_addr.ss_family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,

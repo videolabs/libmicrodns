@@ -143,6 +143,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 extern int os_strerror(int, char *, size_t);
-extern int os_mcast_join(sock_t, const struct sockaddr_storage *, uint32_t intf_idx);
+extern int os_mcast_join(sock_t, const struct sockaddr_storage *, uint32_t intf_idx,
+                         const struct sockaddr_storage* intf_addr);
 
 #endif /* MICRODNS_COMPAT_H */

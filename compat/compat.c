@@ -105,7 +105,7 @@ os_strerror(int errnum, char *buf, size_t buflen)
 }
 
 int
-os_mcast_join(sock_t s, const struct sockaddr_storage *ss, multicast_if intf_idx)
+os_mcast_join(sock_t s, const struct sockaddr_storage *ss, uint32_t intf_idx)
 {
 #ifdef MCAST_JOIN_GROUP
         struct group_req mgroup;

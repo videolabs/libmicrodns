@@ -54,7 +54,7 @@ struct mdns_svc {
 
 struct mdns_conn {
         sock_t sock;
-        multicast_if intf_idx;
+        uint32_t intf_idx;
         struct sockaddr_storage intf_addr;  // IP address and family of the interface
         struct sockaddr_storage mcast_addr; // The multicast address targeted by this connection
 };
@@ -114,7 +114,7 @@ static size_t count_interfaces(const struct ifaddrs *ifs,
 }
 
 static int
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
+mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
                      size_t* p_nb_intf, struct sockaddr_storage **pp_mcast_addrs,
                      const struct addrinfo* addrs)
 {
@@ -123,7 +123,7 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
         struct ifaddrs *c;
         struct sockaddr_storage *mcast_addrs;
         size_t nb_if;
-        multicast_if* intfs;
+        uint32_t* intfs;
 
         *p_nb_intf = 0;
         if (getifaddrs(&ifs) || ifs == NULL)
@@ -179,9 +179,9 @@ mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_
 }
 #else
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
+mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips, size_t* p_nb_intf, int ai_family)
 {
-        multicast_if *intfs;
+        uint32_t *intfs;
         struct sockaddr_storage *mdns_ips;
         *pp_intfs = intfs = malloc(sizeof(*intfs));
         if (intfs == NULL)
@@ -211,11 +211,11 @@ mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf, int family)
 }
 
 static size_t
-mdns_list_interfaces(multicast_if** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
+mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
                      size_t* p_nb_intf, struct sockaddr_storage **pp_mcast_addrs,
                      const struct addrinfo* addrs)
 {
-        multicast_if* intfs;
+        uint32_t* intfs;
         struct sockaddr_storage *mdns_ips;
         struct sockaddr_storage *mcast_addrs;
         IP_ADAPTER_ADDRESSES *res = NULL, *current;
@@ -350,7 +350,7 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
 {
         char buf[6];
         struct addrinfo hints, *res = NULL;
-        multicast_if* ifaddrs = NULL;
+        uint32_t* ifaddrs = NULL;
         struct sockaddr_storage *mdns_ips = NULL;
         struct sockaddr_storage *mcast_addrs = NULL;
         size_t i;

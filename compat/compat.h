@@ -99,15 +99,10 @@ extern const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 extern int inet_pton(int af, const char *src, void *dst);
 # endif // !inet_ntop
 
-typedef DWORD multicast_if;
-
 #else
 
 # if HAVE_IFADDRS_H
 #include <ifaddrs.h>
-typedef uint32_t multicast_if;
-# else
-typedef void* multicast_if;
 # endif
 
 #endif // _WIN32
@@ -148,6 +143,6 @@ typedef SSIZE_T ssize_t;
 #endif
 
 extern int os_strerror(int, char *, size_t);
-extern int os_mcast_join(sock_t, const struct sockaddr_storage *, multicast_if intf_idx);
+extern int os_mcast_join(sock_t, const struct sockaddr_storage *, uint32_t intf_idx);
 
 #endif /* MICRODNS_COMPAT_H */

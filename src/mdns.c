@@ -713,18 +713,20 @@ mdns_strerror(int r, char *buf, size_t n)
         return os_strerror(r, buf, n);
 }
 
+/* Test if string s ends in string sub
+ * return 0 if match */
 static int
-strrcmp(const char *s1, const char *s2)
+strrcmp(const char *s, const char *sub)
 {
         size_t m, n;
 
-        if (!s1 || !s2)
+        if (!s || !sub)
                 return (1);
-        m = strlen(s1);
-        n = strlen(s2);
+        m = strlen(s);
+        n = strlen(sub);
         if (n > m)
                 return (1);
-        return (strncmp(s1 + m - n, s2, n));
+        return (strncmp(s + m - n, sub, n));
 }
 
 static int

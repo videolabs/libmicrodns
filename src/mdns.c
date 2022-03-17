@@ -758,7 +758,7 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                     continue;
             }
 
-            if (ahdr.num_ans_rr + ahdr.num_add_rr == 0)
+            if (ahdr.num_ans_rr + ahdr.num_auth_rr + ahdr.num_add_rr == 0)
             {
                     mdns_free(entries);
                     continue;

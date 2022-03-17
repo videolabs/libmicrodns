@@ -729,6 +729,12 @@ strrcmp(const char *s, const char *sub)
         return (strncmp(s + m - n, sub, n));
 }
 
+static bool
+is_host_address_rr_type(enum rr_type type)
+{
+        return (type == RR_A || type == RR_AAAA);
+}
+
 static int
 mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                           unsigned int nb_names, mdns_listen_callback callback,
@@ -767,6 +773,10 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
             for (struct rr_entry *entry = entries; entry; entry = entry->next) {
                     for (unsigned int i = 0; i < nb_names; ++i) {
                             if (!strrcmp(entry->name, names[i])) {
+                                    callback(p_cookie, r, entries);
+                                    break;
+                            } else if (is_host_address_rr_type(entry->type) &&
+                                    !strcasecmp (entry->name, names[i])) {
                                     callback(p_cookie, r, entries);
                                     break;
                             }

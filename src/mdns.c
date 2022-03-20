@@ -828,7 +828,8 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
 
                 if (is_host_address_rr_type(type))
                 {
-                        if (!hostname_has_two_labels(qns[i].name))
+                        if (!hostname_has_two_labels(qns[i].name) ||
+                            !(!strrcmp(qns[i].name, ".local") || !strrcmp(qns[i].name, ".local.")))
                         {
                                 free(qns);
                                 return (MDNS_ERROR);

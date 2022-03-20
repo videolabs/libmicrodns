@@ -752,6 +752,19 @@ is_host_address_rr_type(enum rr_type type)
         return (type == RR_A || type == RR_AAAA);
 }
 
+/* A lookup of 'foo.local.' or 'foo.local' will
+ * match a result of 'foo.local' */
+static bool
+hostname_match(const char *hostname, const char *match)
+{
+        unsigned int len;
+
+        len = strlen(hostname);
+        if (hostname[len-1] == '.')
+                len--;
+        return (!strncasecmp (hostname, match, len));
+}
+
 static int
 mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                           unsigned int nb_names, mdns_listen_callback callback,
@@ -793,7 +806,7 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                                     callback(p_cookie, r, entries);
                                     break;
                             } else if (is_host_address_rr_type(entry->type) &&
-                                    !strcasecmp (entry->name, names[i])) {
+                                    hostname_match(names[i], entry->name)) {
                                     callback(p_cookie, r, entries);
                                     break;
                             }

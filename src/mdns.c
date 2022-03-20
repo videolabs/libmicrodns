@@ -730,6 +730,23 @@ strrcmp(const char *s, const char *sub)
 }
 
 static bool
+hostname_has_two_labels(const char *hostname)
+{
+        unsigned int i, num_dots;
+
+        if (!hostname)
+                return false;
+
+        for (i = 0, num_dots = 0; hostname[i] != '\0' && num_dots < 2; i++)
+        {
+                if (hostname[i] == '.' && hostname[i+1] != '\0')
+                        num_dots++;
+        }
+
+        return (num_dots == 1);
+}
+
+static bool
 is_host_address_rr_type(enum rr_type type)
 {
         return (type == RR_A || type == RR_AAAA);
@@ -808,6 +825,16 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                 qns[i].name     = (char *)names[i];
                 qns[i].type     = type;
                 qns[i].rr_class = RR_IN;
+
+                if (is_host_address_rr_type(type))
+                {
+                        if (!hostname_has_two_labels(qns[i].name))
+                        {
+                                free(qns);
+                                return (MDNS_ERROR);
+                        }
+                }
+
                 if (i + 1 < nb_names)
                     qns[i].next = &qns[i+1];
         }

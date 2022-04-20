@@ -175,25 +175,6 @@ subdir('compat')
 subdir('include')
 subdir('src')
 
-pkg_cdata = configuration_data()
-
-pkg_cdata.set('prefix', join_paths(get_option('prefix')))
-pkg_cdata.set('exec_prefix', '${prefix}')
-pkg_cdata.set('libdir', '${prefix}/@0@'.format(get_option('libdir')))
-pkg_cdata.set('includedir', '${prefix}/@0@'.format(get_option('includedir')))
-pkg_cdata.set('VERSION', mdns_version)
-pkg_cdata.set('LIBSOCKET', host_system == 'windows' ? '-lws2_32 -liphlpapi': '')
-
-pkg_install_dir = '@0@/pkgconfig'.format(get_option('libdir'))
-
-configure_file(
-    input: 'src/microdns.pc.in',
-    output: 'microdns.pc',
-    configuration: pkg_cdata,
-    install_dir: pkg_install_dir,
-    install: true,
-)
-
 mdns_dep = declare_dependency(link_with : libmicrodns,
     include_directories : incdirs,
     dependencies: deps,

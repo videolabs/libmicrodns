@@ -21,10 +21,8 @@ libmicrodns = library('microdns', libmicrodns_sources,
 )
 
 pkgconf = import('pkgconfig')
-pkgconf.generate(libraries: libmicrodns,
-                 version: mdns_version,
+pkgconf.generate(libmicrodns,
                  name: 'microDNS',
                  description: 'mDNS simple implementation',
                  filebase: 'microdns',
-                 requires: deps,
 )

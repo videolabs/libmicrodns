@@ -59,21 +59,35 @@ add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 cdata = configuration_data()
 
 deps = []
+cc_args = []
 
 host_system = host_machine.system()
 
 if host_system == 'windows'
     deps += [cc.find_library('ws2_32')]
     deps += [cc.find_library('iphlpapi')]
+    building_for_vista = cc.compiles('''#include <windows.h>
+        #ifndef WINVER
+        #error "unknown minimum supported OS version"
+        #endif
+        #if (WINVER < _WIN32_WINNT_VISTA)
+        #error "Windows Vista API is not guaranteed"
+        #endif
+        ''',
+        name: 'building for Windows Vista')
+    if not building_for_vista
+        cc_args = [
+            '-D_WIN32_WINNT=_WIN32_WINNT_VISTA',
+            '-DWINVER=_WIN32_WINNT_VISTA',
+        ]
+        add_project_arguments(cc_args, language: 'c')
+    endif
 endif
 
 inet_ntop_src = '''
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #include <windows.h>
-# if _WIN32_WINNT < 0x600
-#  error Needs vista+
-# endif
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -83,7 +97,7 @@ int main() {
 }
 '''
 
-if cc.links(inet_ntop_src, dependencies: deps)
+if cc.links(inet_ntop_src, dependencies: deps, args: cc_args)
     cdata.set('HAVE_INET_NTOP', 1)
 endif
 
@@ -92,9 +106,6 @@ poll_src = '''
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
-# if _WIN32_WINNT < 0x600
-#  error Needs vista+
-# endif
 # if defined(_MSC_VER)
 #   error
 # endif
@@ -106,7 +117,7 @@ int main() {
 }
 '''
 
-if cc.links(poll_src, dependencies: deps)
+if cc.links(poll_src, dependencies: deps, args: cc_args)
     cdata.set('HAVE_POLL', 1)
 endif
 
@@ -118,7 +129,7 @@ elif host_system == 'windows'
     pollfd_check_prefix += '#include <winsock2.h>'
 endif
 
-if cc.has_type('struct pollfd', prefix: pollfd_check_prefix)
+if cc.has_type('struct pollfd', prefix: pollfd_check_prefix, args: cc_args)
     cdata.set('HAVE_STRUCT_POLLFD', 1)
 endif
 

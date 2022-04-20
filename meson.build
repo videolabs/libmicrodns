@@ -186,14 +186,6 @@ subdir('compat')
 subdir('include')
 subdir('src')
 
-pkg_cdata = configuration_data()
-
-pkg_cdata.set('prefix', join_paths(get_option('prefix')))
-pkg_cdata.set('exec_prefix', '${prefix}')
-pkg_cdata.set('libdir', '${prefix}/@0@'.format(get_option('libdir')))
-pkg_cdata.set('includedir', '${prefix}/@0@'.format(get_option('includedir')))
-pkg_cdata.set('VERSION', mdns_version)
-
 mdns_dep = declare_dependency(link_with : libmicrodns,
     include_directories : incdirs,
     dependencies: deps,

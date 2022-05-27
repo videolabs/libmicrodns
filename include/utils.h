@@ -31,6 +31,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#if defined (__unix__) || defined (__APPLE__)
+# include <netinet/in.h>
+#endif
+
 #include "compat.h"
 
 #define MDNS_DN_MAXSZ 256 // domain name maximum size

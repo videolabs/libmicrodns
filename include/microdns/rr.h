@@ -31,6 +31,7 @@
 
 #if defined (__unix__) || defined (__APPLE__)
 # include <arpa/inet.h>
+# include <netinet/in.h>
 #elif defined(_WIN32)
 # include <ws2tcpip.h>
 #endif

@@ -11,4 +11,5 @@ examples_kwargs = {
 
 executable('listen', 'main.c', kwargs: examples_kwargs)
 executable('announce', 'announce.c', kwargs: examples_kwargs)
+executable('host-lookup', 'host-lookup.c', kwargs: examples_kwargs)
 

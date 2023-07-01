@@ -729,10 +729,46 @@ strrcmp(const char *s, const char *sub)
         return (strncmp(s + m - n, sub, n));
 }
 
+static bool
+hostname_has_two_labels(const char *hostname)
+{
+        unsigned int i, num_dots;
+
+        if (!hostname)
+                return false;
+
+        for (i = 0, num_dots = 0; hostname[i] != '\0' && num_dots < 2; i++)
+        {
+                if (hostname[i] == '.' && hostname[i+1] != '\0')
+                        num_dots++;
+        }
+
+        return (num_dots == 1);
+}
+
+static bool
+is_host_address_rr_type(enum rr_type type)
+{
+        return (type == RR_A || type == RR_AAAA);
+}
+
+/* A lookup of 'foo.local.' or 'foo.local' will
+ * match a result of 'foo.local' */
+static bool
+hostname_match(const char *hostname, const char *match)
+{
+        unsigned int len;
+
+        len = strlen(hostname);
+        if (hostname[len-1] == '.')
+                len--;
+        return (!strncasecmp (hostname, match, len));
+}
+
 static int
 mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
-                          unsigned int nb_names, mdns_listen_callback callback,
-                          void *p_cookie)
+                          unsigned int nb_names, enum rr_type type,
+                          mdns_listen_callback callback, void *p_cookie)
 {
     struct mdns_hdr ahdr = {0};
     struct rr_entry *entries;
@@ -749,6 +785,8 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
             return r;
     }
     for (size_t i = 0; i < ctx->nb_conns; ++i) {
+            bool has_valid_entries = false;
+
             if ((pfd[i].revents & POLLIN) == 0)
                     continue;
             r = mdns_recv(&ctx->conns[i], &ahdr, &entries);
@@ -758,20 +796,28 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                     continue;
             }
 
-            if (ahdr.num_ans_rr + ahdr.num_add_rr == 0)
+            if (ahdr.num_ans_rr + ahdr.num_auth_rr + ahdr.num_add_rr == 0)
             {
                     mdns_free(entries);
                     continue;
             }
 
             for (struct rr_entry *entry = entries; entry; entry = entry->next) {
+                    if (entry->type != type)
+                            continue;
                     for (unsigned int i = 0; i < nb_names; ++i) {
                             if (!strrcmp(entry->name, names[i])) {
-                                    callback(p_cookie, r, entries);
-                                    break;
+                                    entry->valid = true;
+                                    has_valid_entries = true;
+                            } else if (is_host_address_rr_type(entry->type) &&
+                                    hostname_match(names[i], entry->name)) {
+                                    entry->valid = true;
+                                    has_valid_entries = true;
                             }
                     }
             }
+            if (has_valid_entries)
+                    callback(p_cookie, r, entries);
             mdns_free(entries);
     }
     return 0;
@@ -798,6 +844,17 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                 qns[i].name     = (char *)names[i];
                 qns[i].type     = type;
                 qns[i].rr_class = RR_IN;
+
+                if (is_host_address_rr_type(type))
+                {
+                        if (!hostname_has_two_labels(qns[i].name) ||
+                            !(!strrcmp(qns[i].name, ".local") || !strrcmp(qns[i].name, ".local.")))
+                        {
+                                free(qns);
+                                return (MDNS_ERROR);
+                        }
+                }
+
                 if (i + 1 < nb_names)
                     qns[i].next = &qns[i+1];
         }
@@ -819,7 +876,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                         }
                         t1 = t2;
                 }
-                mdns_listen_probe_network(ctx, names, nb_names, callback, p_cookie);
+                mdns_listen_probe_network(ctx, names, nb_names, type, callback, p_cookie);
         }
         free(qns);
         return (0);

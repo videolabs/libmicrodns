@@ -767,8 +767,8 @@ hostname_match(const char *hostname, const char *match)
 
 static int
 mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
-                          unsigned int nb_names, mdns_listen_callback callback,
-                          void *p_cookie)
+                          unsigned int nb_names, enum rr_type type,
+                          mdns_listen_callback callback, void *p_cookie)
 {
     struct mdns_hdr ahdr = {0};
     struct rr_entry *entries;
@@ -785,6 +785,8 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
             return r;
     }
     for (size_t i = 0; i < ctx->nb_conns; ++i) {
+            bool has_valid_entries = false;
+
             if ((pfd[i].revents & POLLIN) == 0)
                     continue;
             r = mdns_recv(&ctx->conns[i], &ahdr, &entries);
@@ -801,17 +803,21 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
             }
 
             for (struct rr_entry *entry = entries; entry; entry = entry->next) {
+                    if (entry->type != type)
+                            continue;
                     for (unsigned int i = 0; i < nb_names; ++i) {
                             if (!strrcmp(entry->name, names[i])) {
-                                    callback(p_cookie, r, entries);
-                                    break;
+                                    entry->valid = true;
+                                    has_valid_entries = true;
                             } else if (is_host_address_rr_type(entry->type) &&
                                     hostname_match(names[i], entry->name)) {
-                                    callback(p_cookie, r, entries);
-                                    break;
+                                    entry->valid = true;
+                                    has_valid_entries = true;
                             }
                     }
             }
+            if (has_valid_entries)
+                    callback(p_cookie, r, entries);
             mdns_free(entries);
     }
     return 0;
@@ -870,7 +876,7 @@ mdns_listen(const struct mdns_ctx *ctx, const char *const names[],
                         }
                         t1 = t2;
                 }
-                mdns_listen_probe_network(ctx, names, nb_names, callback, p_cookie);
+                mdns_listen_probe_network(ctx, names, nb_names, type, callback, p_cookie);
         }
         free(qns);
         return (0);

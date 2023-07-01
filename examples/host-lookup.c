@@ -67,10 +67,13 @@ static void callback(void *p_cookie, int status, const struct rr_entry *entries)
         }
         entry = (struct rr_entry *) entries;
         while (entry) {
-                if (entry->type == RR_A)
-                        printf("%s resolves to IPv4 address %s\n", hostname, entry->data.A.addr_str);
-                if (entry->type == RR_AAAA)
-                        printf("%s resolves to IPv6 address %s\n", hostname, entry->data.AAAA.addr_str);
+                if (entry->valid)
+                {
+                        if (entry->type == RR_A)
+                                printf("%s resolves to IPv4 address %s\n", hostname, entry->data.A.addr_str);
+                        else if (entry->type == RR_AAAA)
+                                printf("%s resolves to IPv6 address %s\n", hostname, entry->data.AAAA.addr_str);
+                }
                 entry = entry->next;
         }
         stopflag = true;

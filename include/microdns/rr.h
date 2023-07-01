@@ -95,6 +95,7 @@ struct rr_entry {
 
         /* Answers only */
         uint32_t ttl;
+        uint16_t valid : 1; // whether the answer is valid for the request
         uint16_t data_len;
         union    rr_data data;
 

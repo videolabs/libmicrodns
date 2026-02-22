@@ -28,6 +28,7 @@ enum {
         MDNS_NETERR = -2, // network error
         MDNS_LKPERR = -3, // lookup error
         MDNS_ERROR  = -4, // any runtime error that's not originating from the standard library
+        MDNS_GOODBYE = 1,  // goodbye packet received (RFC 6762 §11.3, TTL=0)
 };
 
 /*

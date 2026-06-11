@@ -433,6 +433,9 @@ mdns_resolve(struct mdns_ctx *ctx, const char *addr, unsigned short port)
                 return (status);
         }
         if (ctx->nb_conns == 0) {
+                free(ifaddrs);
+                free(mdns_ips);
+                free(mcast_addrs);
                 freeaddrinfo(res);
                 return (MDNS_NETERR);
         }

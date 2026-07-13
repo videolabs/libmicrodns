@@ -183,6 +183,8 @@ rr_read_TXT(const uint8_t *ptr, size_t *n, const uint8_t *root, struct rr_entry 
                 struct rr_data_txt *text;
 
                 memcpy(&l, ptr, sizeof(l));
+                if ((uint16_t)(l + 1) > len)
+                        return (NULL);
                 advance(1);
                 if (*n < l)
                         return (NULL);

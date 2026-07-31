@@ -62,17 +62,17 @@ libmicrodns 0.0.7
 -----------------
 libmicrodns 0.0.6
 -----------------
- * Fix an interface selection issue on windows
+ * Fix an interface selection issue on Windows
  * Fix invalid calls to free()
- * Fix invalid allocation on windows
- * Fix multi-interfaces fallback
+ * Fix invalid allocation on Windows
+ * Fix multi-interface fallback
  * Fix MSVC build
 
 -----------------
 libmicrodns 0.0.5
 -----------------
  * Fix UWP build
- * Fix invalid error message formating
+ * Fix invalid error message formatting
 
 -----------------
 libmicrodns 0.0.4
@@ -82,7 +82,7 @@ libmicrodns 0.0.4
  * Fix various memory leaks
  * Fix various potential crashes
  * Fix build for MSVC
- * Fix incorrect wide strings handling
+ * Fix incorrect wide string handling
 
 -----------------
 libmicrodns 0.0.3
@@ -94,6 +94,7 @@ libmicrodns 0.0.2
 -----------------
  * Fix leaks and possible crashes in init
 
+-----------------
 libmicrodns 0.0.1
 -----------------
 

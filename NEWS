@@ -1,4 +1,14 @@
 -----------------
+libmicrodns 0.3.0
+-----------------
+ * Detect mDNS goodbye packets and report them with MDNS_LISTEN_GOODBYE (RFC 6762)
+ * Fix a read past the declared RDLENGTH in the TXT record parser
+ * Fix a resource leak in mdns_resolve()
+ * Fix builds on some platforms (PIC, missing include)
+ * Require at least Windows Vista
+ * Simplify the pkg-config file generation
+
+-----------------
 libmicrodns 0.2.0
 -----------------
  * Fix IPv6 support

@@ -84,6 +84,11 @@ enum mdns_announce_type {
     MDNS_ANNOUNCE_GOODBYE,  // A goodbye packet needs to be sent
 };
 
+// Positive status passed to mdns_listen_callback; negative values are errors
+enum {
+    MDNS_LISTEN_GOODBYE = 1,  // goodbye packet received (RFC 6762 §11.3, TTL=0)
+};
+
 typedef void (*mdns_listen_callback)(void*, int, const struct rr_entry *);
 
 /**

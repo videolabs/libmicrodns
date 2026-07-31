@@ -772,7 +772,7 @@ mdns_listen_probe_network(const struct mdns_ctx *ctx, const char *const names[],
                             if (!strrcmp(entry->name, names[i])) {
                                     /* RFC 6762 §11.3: TTL=0 is a goodbye packet */
                                     if (entry->ttl == 0) {
-                                            callback(p_cookie, MDNS_GOODBYE, entries);
+                                            callback(p_cookie, MDNS_LISTEN_GOODBYE, entries);
                                     } else {
                                             callback(p_cookie, r, entries);
                                     }

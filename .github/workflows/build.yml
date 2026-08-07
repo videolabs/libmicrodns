@@ -48,3 +48,19 @@ jobs:
       run: |
         meson setup build
         meson compile -C build
+
+  macos:
+    strategy:
+      fail-fast: false
+    runs-on: macos-latest
+    steps:
+    - name: Get Code
+      uses: actions/checkout@v7
+
+    - name: Install macOS dependencies
+      run: pip install meson
+
+    - name: Execute build
+      run: |
+        meson setup build
+        meson compile -C build

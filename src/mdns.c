@@ -235,13 +235,39 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
 
 #else // _WIN32
 
+#if (NTDDI_VERSION < NTDDI_VISTA)
+typedef union {
+    IP_ADAPTER_ADDRESSES_LH vista;
+    IP_ADAPTER_ADDRESSES_XP xp;
+} IP_ADAPTER_ADDRESSES_U;
+
+# define XPVISTA_ADAPTER(p_u)       (&(p_u)->xp)
+# define XPVISTA_ADAPTER_VISTA(p_u) (&(p_u)->vista)
+# define XPVISTA_ADAPTER_NEXT(p_u)  ((IP_ADAPTER_ADDRESSES_U*) (p_u)->xp.Next)
+#else
+typedef IP_ADAPTER_ADDRESSES_LH  IP_ADAPTER_ADDRESSES_U;
+# define XPVISTA_ADAPTER(p_u)       (p_u)
+# define XPVISTA_ADAPTER_VISTA(p_u) (p_u)
+# define XPVISTA_ADAPTER_NEXT(p_u)  (p_u)->Next
+#endif
+
 static bool
-mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES *intf, int family)
+mdns_is_interface_valuable(IP_ADAPTER_ADDRESSES_U *intf, int family)
 {
-    return (intf->IfType == IF_TYPE_IEEE80211 || intf->IfType == IF_TYPE_ETHERNET_CSMACD) &&
-            intf->OperStatus == IfOperStatusUp &&
-            ((family == AF_INET && intf->Ipv4Enabled) ||
-            (family == AF_INET6 && intf->Ipv6Enabled));
+#if (NTDDI_VERSION < NTDDI_VISTA)
+    bool isVistaOrGreater = false;
+    HMODULE hKernel32 = GetModuleHandle(TEXT("kernel32.dll"));
+    if (hKernel32 != NULL)
+        isVistaOrGreater = GetProcAddress(hKernel32, "EnumResourceLanguagesExW") != NULL;
+
+    if (!isVistaOrGreater)
+        return (intf->xp.IfType == IF_TYPE_IEEE80211 || intf->xp.IfType == IF_TYPE_ETHERNET_CSMACD) &&
+                intf->xp.OperStatus == IfOperStatusUp;
+#endif
+    return (XPVISTA_ADAPTER_VISTA(intf)->IfType == IF_TYPE_IEEE80211 || XPVISTA_ADAPTER_VISTA(intf)->IfType == IF_TYPE_ETHERNET_CSMACD) &&
+            XPVISTA_ADAPTER_VISTA(intf)->OperStatus == IfOperStatusUp &&
+            ((family == AF_INET && XPVISTA_ADAPTER_VISTA(intf)->Ipv4Enabled) ||
+            (family == AF_INET6 && XPVISTA_ADAPTER_VISTA(intf)->Ipv6Enabled));
 }
 
 static size_t
@@ -252,7 +278,7 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
         uint32_t* intfs;
         struct sockaddr_storage *mdns_ips;
         struct sockaddr_storage *mcast_addrs;
-        IP_ADAPTER_ADDRESSES *res = NULL, *current;
+        IP_ADAPTER_ADDRESSES_U *res = NULL, *current;
         ULONG size;
         HRESULT hr;
         size_t nb_intf = 0;
@@ -276,7 +302,7 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
                         return (MDNS_ERROR);
                 hr = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST |
                                                     GAA_FLAG_SKIP_DNS_SERVER,
-                                                    NULL, res, &size);
+                                                    NULL, XPVISTA_ADAPTER(res), &size);
         } while (hr == ERROR_BUFFER_OVERFLOW);
         if (hr != NO_ERROR) {
                 free(res);
@@ -284,7 +310,7 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
         }
 
         for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
-                for (current = res; current != NULL; current = current->Next) {
+                for (current = res; current != NULL; current = XPVISTA_ADAPTER_NEXT(current)) {
                         if (!mdns_is_interface_valuable(current, addr->ai_family))
                                 continue;
                         ++nb_intf;
@@ -336,17 +362,17 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
                 return (MDNS_ERROR);
         }
         for ( const struct addrinfo* addr = addrs; addr != NULL; addr = addr->ai_next ) {
-            for (current = res; current != NULL; current = current->Next) {
+            for (current = res; current != NULL; current = XPVISTA_ADAPTER_NEXT(current)) {
                     if (!mdns_is_interface_valuable(current, addr->ai_family))
                             continue;
                     if (addr->ai_family == AF_INET6) {
-                            *intfs = current->Ipv6IfIndex;
+                            *intfs = XPVISTA_ADAPTER(current)->Ipv6IfIndex;
                     }
                     else {
-                            *intfs = current->IfIndex;
+                            *intfs = XPVISTA_ADAPTER(current)->IfIndex;
                     }
                     memcpy(mcast_addrs, addr->ai_addr, sa_len(addr->ai_addr));
-                    PIP_ADAPTER_UNICAST_ADDRESS p_unicast = current->FirstUnicastAddress;
+                    PIP_ADAPTER_UNICAST_ADDRESS p_unicast = XPVISTA_ADAPTER(current)->FirstUnicastAddress;
                     if (p_unicast == NULL) {
                             free(mdns_ips);
                             free(intfs);

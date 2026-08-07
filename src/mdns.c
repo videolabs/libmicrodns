@@ -279,7 +279,7 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
         struct sockaddr_storage *mdns_ips;
         struct sockaddr_storage *mcast_addrs;
         IP_ADAPTER_ADDRESSES_U *res = NULL, *current;
-        ULONG size;
+        ULONG size = 0;
         HRESULT hr;
         size_t nb_intf = 0;
 
@@ -293,9 +293,9 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
          * ERROR_BUFFER_OVERFLOW, which would require calling GetAdaptersAddresses function multiple
          * times. The example code illustrates this method of use.
          */
-        size = 15 * 1024;
         do
         {
+                size += 15 * 1024;
                 free(res);
                 res = malloc( size );
                 if (res == NULL)

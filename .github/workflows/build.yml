@@ -18,6 +18,7 @@ jobs:
             cc: clang
           - os: ubuntu-latest
             cc: gcc
+        buildtype: [shared, static]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v7
@@ -30,11 +31,11 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
       run: |
-        meson setup build
+        meson setup --default-library ${{ matrix.buildtype }} build
         meson compile -C build
 
   windows:
-    name: Build ${{ matrix.target.name }}
+    name: Build ${{ matrix.target.name }} (${{ matrix.buildtype }})
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +44,7 @@ jobs:
           {"name": "Windows XP",   "args": "-Dc_args='-D_WIN32_WINNT=0x0502'"},
           {"name": "UWP",          "args": "-Dc_args='-DWINAPI_FAMILY=WINAPI_FAMILY_APP'"},
         ]
+        buildtype: [shared, static]
     runs-on: windows-latest
     steps:
     - name: Get Code
@@ -53,12 +55,14 @@ jobs:
 
     - name: Execute build
       run: |
-        meson setup ${{ matrix.target.args }} build
+        meson setup --default-library ${{ matrix.buildtype }} ${{ matrix.target.args }} build
         meson compile -C build
 
   macos:
     strategy:
       fail-fast: false
+      matrix:
+        buildtype: [shared, static]
     runs-on: macos-latest
     steps:
     - name: Get Code
@@ -69,5 +73,5 @@ jobs:
 
     - name: Execute build
       run: |
-        meson setup build
+        meson setup --default-library ${{ matrix.buildtype }} build
         meson compile -C build

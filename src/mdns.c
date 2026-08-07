@@ -303,7 +303,7 @@ mdns_list_interfaces(uint32_t** pp_intfs, struct sockaddr_storage **pp_mdns_ips,
                 hr = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST |
                                                     GAA_FLAG_SKIP_DNS_SERVER,
                                                     NULL, XPVISTA_ADAPTER(res), &size);
-        } while (hr == ERROR_BUFFER_OVERFLOW);
+        } while (hr == ERROR_BUFFER_OVERFLOW && size <= 45 * 1024);
         if (hr != NO_ERROR) {
                 free(res);
                 return (MDNS_NETERR);

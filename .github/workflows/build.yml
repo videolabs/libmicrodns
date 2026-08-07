@@ -33,6 +33,7 @@ jobs:
       run: |
         meson setup --default-library ${{ matrix.buildtype }} build
         meson compile -C build
+        ninja clang-tidy -C build
 
   windows:
     name: Build ${{ matrix.target.name }} (${{ matrix.buildtype }})

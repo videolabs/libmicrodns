@@ -66,22 +66,6 @@ host_system = host_machine.system()
 if host_system == 'windows'
     deps += [cc.find_library('ws2_32')]
     deps += [cc.find_library('iphlpapi')]
-    building_for_vista = cc.compiles('''#include <windows.h>
-        #ifndef WINVER
-        #error "unknown minimum supported OS version"
-        #endif
-        #if (WINVER < _WIN32_WINNT_VISTA)
-        #error "Windows Vista API is not guaranteed"
-        #endif
-        ''',
-        name: 'building for Windows Vista')
-    if not building_for_vista
-        cc_args = [
-            '-D_WIN32_WINNT=_WIN32_WINNT_VISTA',
-            '-DWINVER=_WIN32_WINNT_VISTA',
-        ]
-        add_project_arguments(cc_args, language: 'c')
-    endif
 endif
 
 inet_ntop_src = '''

@@ -34,10 +34,15 @@ jobs:
         meson compile -C build
 
   windows:
+    name: Build ${{ matrix.target.name }}
     strategy:
       fail-fast: false
       matrix:
-        winver: ['0x0A00', '0x502']
+        target: [
+          {"name": "Windows 10",   "args": "-Dc_args='-D_WIN32_WINNT=0x0A00'"},
+          {"name": "Windows XP",   "args": "-Dc_args='-D_WIN32_WINNT=0x0502'"},
+          {"name": "UWP",          "args": "-Dc_args='-DWINAPI_FAMILY=WINAPI_FAMILY_APP'"},
+        ]
     runs-on: windows-latest
     steps:
     - name: Get Code
@@ -48,7 +53,7 @@ jobs:
 
     - name: Execute build
       run: |
-        meson setup -Dc_args="-D_WIN32_WINNT=${{matrix.winver}}" build
+        meson setup ${{ matrix.target.args }} build
         meson compile -C build
 
   macos:

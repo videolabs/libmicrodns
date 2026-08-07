@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  build:
+  linux:
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +29,22 @@ jobs:
     - name: Execute build
       env:
         CC: ${{ matrix.cc }}
+      run: |
+        meson setup build
+        meson compile -C build
+
+  windows:
+    strategy:
+      fail-fast: false
+    runs-on: windows-latest
+    steps:
+    - name: Get Code
+      uses: actions/checkout@v7
+
+    - name: Install Windows dependencies
+      run: pip install meson
+
+    - name: Execute build
       run: |
         meson setup build
         meson compile -C build

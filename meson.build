@@ -59,7 +59,7 @@ add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 cdata = configuration_data()
 
 deps = []
-cc_args = []
+cc_args = cc.get_supported_arguments(['-Werror-implicit-function-declaration', '-we4013'])
 
 host_system = host_machine.system()
 

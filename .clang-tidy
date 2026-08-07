@@ -1,3 +1,4 @@
-Checks:         'clang-*,performance-*,portability-*,bugprone-*,llvm-*,cert-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
+Checks:         'clang-*,performance-*,portability-*,bugprone-*,llvm-*,cert-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-llvm-include-order'
 
 # -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling: we use memcpy and not memcpy_s
+# -llvm-include-order:                                                   we don't care about the include order

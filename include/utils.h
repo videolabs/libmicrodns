@@ -30,6 +30,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #if defined (__unix__) || defined (__APPLE__)
 # include <netinet/in.h>

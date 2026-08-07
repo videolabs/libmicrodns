@@ -36,6 +36,8 @@ jobs:
   windows:
     strategy:
       fail-fast: false
+      matrix:
+        winver: ['0x0A00', '0x502']
     runs-on: windows-latest
     steps:
     - name: Get Code
@@ -46,7 +48,7 @@ jobs:
 
     - name: Execute build
       run: |
-        meson setup build
+        meson setup -Dc_args="-D_WIN32_WINNT=${{matrix.winver}}" build
         meson compile -C build
 
   macos:

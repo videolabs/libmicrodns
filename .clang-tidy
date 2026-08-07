@@ -1,0 +1,3 @@
+Checks:         'clang-*,performance-*,portability-*,bugprone-*,llvm-*,cert-*,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'
+
+# -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling: we use memcpy and not memcpy_s

@@ -32,6 +32,7 @@ jobs:
       run: |
         meson setup build
         meson compile -C build
+        ninja clang-tidy -C build
 
   windows:
     strategy:

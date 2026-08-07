@@ -20,7 +20,7 @@ jobs:
             cc: gcc
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
 
     - name: Install Linux dependencies
       run: |

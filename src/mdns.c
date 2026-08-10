@@ -892,13 +892,50 @@ mdns_request_initial_announce(struct mdns_ctx *ctx, const char* service)
     }
 }
 
-int
-mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
+static void
+mdns_serve_probe_network(struct mdns_ctx *ctx)
 {
         int r;
         struct mdns_svc *svc;
         struct mdns_hdr qhdr = {0};
         struct rr_entry *question = NULL;
+        struct pollfd *pfd = alloca( sizeof(*pfd) * ctx->nb_conns );
+
+        for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                pfd[i].fd = ctx->conns[i].sock;
+                pfd[i].events = POLLIN;
+        }
+        if (poll(pfd, ctx->nb_conns, 1000) <= 0) {
+                return;
+        }
+        for (size_t i = 0; i < ctx->nb_conns; ++i) {
+                if ((pfd[i].revents & POLLIN) == 0)
+                        continue;
+                r = mdns_recv(&ctx->conns[i], &qhdr, &question);
+                if (r < 0)
+                        continue;
+                if (qhdr.num_qn == 0)
+                        goto end;
+
+                for (svc = ctx->services; svc; svc = svc->next) {
+                        if (question->type == svc->type) {
+                                svc->announce_callback(svc->p_cookie,
+                                       (struct sockaddr*)&ctx->conns[i].intf_addr,
+                                       question->name, MDNS_ANNOUNCE_RESPONSE);
+                                goto end;
+                        }
+                }
+                mdns_free(question);
+                question = NULL;
+        }
+end:
+        mdns_free(question);
+}
+
+int
+mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
+{
+        struct mdns_svc *svc;
 
         for (size_t i = 0; i < ctx->nb_conns; ++i) {
                 if (setsockopt(ctx->conns[i].sock, SOL_SOCKET, SO_SNDTIMEO, (const void *) &os_deadline, sizeof(os_deadline)) < 0)
@@ -914,40 +951,9 @@ mdns_serve(struct mdns_ctx *ctx, mdns_stop_func stop, void *p_cookie)
             }
         }
 
-        for (; stop(p_cookie) == false;) {
-                struct pollfd *pfd = alloca( sizeof(*pfd) * ctx->nb_conns );
+        for (; stop(p_cookie) == false;)
+                mdns_serve_probe_network(ctx);
 
-                for (size_t i = 0; i < ctx->nb_conns; ++i) {
-                        pfd[i].fd = ctx->conns[i].sock;
-                        pfd[i].events = POLLIN;
-                }
-                if (poll(pfd, ctx->nb_conns, 1000) <= 0) {
-                        continue;
-                }
-                for (size_t i = 0; i < ctx->nb_conns; ++i) {
-                        if ((pfd[i].revents & POLLIN) == 0)
-                                continue;
-                        r = mdns_recv(&ctx->conns[i], &qhdr, &question);
-                        if (r < 0)
-                                continue;
-                        if (qhdr.num_qn == 0)
-                                goto again;
-
-                        for (svc = ctx->services; svc; svc = svc->next) {
-                                if (question->type == svc->type) {
-                                        svc->announce_callback(svc->p_cookie,
-                                               (struct sockaddr*)&ctx->conns[i].intf_addr,
-                                               question->name, MDNS_ANNOUNCE_RESPONSE);
-                                        goto again;
-                                }
-                        }
-                        mdns_free(question);
-                        question = NULL;
-                }
-again:
-                mdns_free(question);
-                question = NULL;
-        }
         /* Send the goodbye packets (RFC 6762 §10.1) */
         for (svc = ctx->services; svc; svc = svc->next) {
             for ( size_t i = 0; i < ctx->nb_conns; ++i ) {
